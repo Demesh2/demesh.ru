@@ -7,6 +7,23 @@
   <body>
   <script src="https://public.bnbstatic.com/static/js/ocbs/binance-fiat-widget.js"></script>
     <div id="widget"></div>
+<script>
+        window.onload = function () {
+            var t = document.querySelector('#widget')
+            window.binanceFiatWidget.Widget(t, {
+                locale: 'en',
+                coinInfo: {
+                  fiat: '',
+                  crypto: '',
+                  isInUS: false
+                },
+                urlParmas: {
+                  us_ref: 'your us refId',
+                  ref: 'your refId'
+                }
+            })
+        }
+    </script>
   
   </body>
 </html>
