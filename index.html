@@ -23,6 +23,9 @@
       --dark2:#25211d;
       --shadow: 0 10px 30px rgba(0,0,0,0.06);
       --radius: 16px;
+
+      /* ✅ (3) кружок зелёный */
+      --green:#22c55e;
     }
     *{box-sizing:border-box}
     body{
@@ -43,23 +46,7 @@
     .brand{min-width:220px}
     .brand b{display:block;font-size:18px;letter-spacing:.2px}
     .brand span{display:block;color:var(--muted);font-size:13px}
-    .controls{flex:1;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-    .search{
-      flex:1;min-width:240px;
-      display:flex;align-items:center;gap:8px;
-      background:#fff;border:1px solid var(--border);
-      border-radius:999px;padding:10px 14px;
-      box-shadow: var(--shadow);
-    }
-    .search input{width:100%;border:0;outline:0;background:transparent;font-size:14px}
-    .pill{
-      background:#fff;border:1px solid var(--border);
-      border-radius:999px;padding:8px 12px;
-      display:flex;align-items:center;gap:8px;
-      box-shadow: var(--shadow);
-      font-size:14px;
-    }
-    .pill select{border:0;outline:0;background:transparent;font-size:14px}
+    .controls{flex:1;display:flex;justify-content:flex-end;gap:12px;align-items:center}
     .btn{
       border:1px solid rgba(0,0,0,0.08);
       border-radius:999px;padding:10px 14px;
@@ -78,7 +65,9 @@
     .badge{
       position:absolute;top:-6px;right:-6px;
       width:20px;height:20px;border-radius:999px;
-      background: var(--dark);color:#fff;
+      /* ✅ (3) кружок зелёный */
+      background: var(--green);
+      color:#fff;
       font-size:12px;display:flex;align-items:center;justify-content:center;
     }
     .chips{padding:8px 0 12px}
@@ -270,7 +259,7 @@
       margin-top:10px;
     }
 
-    /* ✅ iOS-like toast (внутри корзины, без alert/confirm) */
+    /* ✅ Toast */
     .toastwrap{
       overflow:hidden;
       max-height:0;
@@ -295,10 +284,16 @@
       display:flex;
       gap:10px;
       align-items:flex-start;
+
+      /* ✅ (2) убираем "острые серые тени" на скруглениях (артефакты blur+shadow) */
+      background-clip: padding-box;
+      -webkit-mask-image: -webkit-radial-gradient(white, black);
+      mask-image: radial-gradient(white, black);
     }
     .toast .dot{
       width:10px;height:10px;border-radius:99px;
-      background: var(--dark);
+      /* ✅ (3) кружок зелёный */
+      background: var(--green);
       margin-top:4px;
       flex:0 0 auto;
     }
@@ -328,7 +323,7 @@
   <script type="text/babel">
     const { useEffect, useMemo, useState } = React;
 
-    const TELEGRAM_USERNAME = "OrEx_zakaz"; // <-- поменяй (без @)
+    const TELEGRAM_USERNAME = "username"; // <-- поменяй (без @)
 
     const data = [
       {
@@ -483,31 +478,24 @@
 
     function App(){
       const [activeCategory, setActiveCategory] = useState("Все");
-      const [searchQuery, setSearchQuery] = useState("");
-      const [weightFilter, setWeightFilter] = useState("all");
 
       const [cartOpen, setCartOpen] = useState(false);
       const [cartItems, setCartItems] = useState([]);
 
-      // ✅ форма клиента
       const [clientName, setClientName] = useState("");
       const [clientPhone, setClientPhone] = useState("");
       const [clientAddress, setClientAddress] = useState("");
 
-      // ✅ toast (вместо alert/confirm)
       const [notice, setNotice] = useState("");
       const [noticeOpen, setNoticeOpen] = useState(false);
 
-      const showNotice = (msg) => {
-        setNotice(msg);
-        setNoticeOpen(true);
-      };
+      const showNotice = (msg) => { setNotice(msg); setNoticeOpen(true); };
       const hideNotice = () => setNoticeOpen(false);
 
-      // auto-hide
       useEffect(() => {
         if (!noticeOpen) return;
-        const t = setTimeout(() => setNoticeOpen(false), 2600);
+        /* ✅ (1) всплывающие окна на 3с дольше (было 2600) -> 5600 */
+        const t = setTimeout(() => setNoticeOpen(false), 5600);
         return () => clearTimeout(t);
       }, [noticeOpen, notice]);
 
@@ -530,24 +518,12 @@
 
       const categories = useMemo(() => ["Все", ...data.map(b => b.cat)], []);
 
-      const showCol = (col) => {
-        if (weightFilter === "all") return true;
-        if (weightFilter === "pack") return col === "pack";
-        return weightFilter === col;
-      };
-
-      const rowMatches = (item, q) => {
-        if (!q.trim()) return true;
-        const text = (item.name + " " + (item.note||"") + " " + (item.pack||"")).toLowerCase();
-        return text.includes(q.toLowerCase());
-      };
-
       const filteredBlocks = useMemo(() => {
         return data
           .filter(b => activeCategory === "Все" || b.cat === activeCategory)
-          .map(b => ({...b, items: b.items.filter(it => rowMatches(it, searchQuery))}))
+          .map(b => ({...b, items: b.items}))
           .filter(b => b.items.length > 0);
-      }, [activeCategory, searchQuery]);
+      }, [activeCategory]);
 
       const addToCart = (item, weightType, priceStr) => {
         const priceValue = parsePrice(priceStr);
@@ -637,37 +613,13 @@
               <div className="row">
                 <div className="brand">
                   <b>ROYAL MARKET — Прайс</b>
-                  <span>Поиск по товарам · цены за 1 кг / 500 г / 250 г (где указано)</span>
+                  <span>Цены за 1 кг / 500 г / 250 г (где указано)</span>
                 </div>
 
                 <div className="controls">
-                  <div className="search">
-                    <span>🔎</span>
-                    <input
-                      value={searchQuery}
-                      onChange={(e)=>setSearchQuery(e.target.value)}
-                      placeholder="Например: кешью, манго, кунжут…"
-                    />
-                  </div>
-
-                  <div className="pill">
-                    <span>Вес:</span>
-                    <select value={weightFilter} onChange={(e)=>setWeightFilter(e.target.value)}>
-                      <option value="all">Все</option>
-                      <option value="kg">1 кг</option>
-                      <option value="g500">500 г</option>
-                      <option value="g250">250 г</option>
-                      <option value="pack">Фасовка</option>
-                    </select>
-                  </div>
-
                   <button className="btn cart-btn" onClick={()=>setCartOpen(true)} aria-label="Корзина">
                     <span>🛒</span>
                     {totalItems > 0 && <span className="badge">{totalItems}</span>}
-                  </button>
-
-                  <button className="btn btn-dark" onClick={()=>window.print()}>
-                    Печать / PDF
                   </button>
                 </div>
               </div>
@@ -690,97 +642,80 @@
           </header>
 
           <main className="container">
-            {filteredBlocks.length === 0 ? (
-              <div style={{color:"var(--muted)", padding:"14px 0"}}>
-                Ничего не найдено. Попробуй другое слово или выбери «Все».
-              </div>
-            ) : (
-              filteredBlocks.map(block => (
-                <section className="section" key={block.cat}>
-                  <h2>
-                    <span>{block.cat}</span>
-                    <small>{block.items.length} поз.</small>
-                  </h2>
+            {filteredBlocks.map(block => (
+              <section className="section" key={block.cat}>
+                <h2>
+                  <span>{block.cat}</span>
+                  <small>{block.items.length} поз.</small>
+                </h2>
 
-                  <div style={{overflowX:"auto"}}>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Товар</th>
-                          {showCol("kg") && <th className="right">1 кг</th>}
-                          {showCol("g500") && <th className="right">500 г</th>}
-                          {showCol("g250") && <th className="right">250 г</th>}
-                          {showCol("pack") && <th>Фасовка / цена</th>}
-                          <th>Примечание</th>
+                <div style={{overflowX:"auto"}}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Товар</th>
+                        <th className="right">1 кг</th>
+                        <th className="right">500 г</th>
+                        <th className="right">250 г</th>
+                        <th>Фасовка / цена</th>
+                        <th>Примечание</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {block.items.map((item, idx) => (
+                        <tr key={idx}>
+                          <td><div className="name">{item.name}</div></td>
+
+                          <td className="mono td-price" data-label="1 кг">
+                            <div className="pricecell">
+                              <span>{item.kg || "—"}</span>
+                              {item.kg && item.kg !== "—" && (
+                                <button className="add-btn" onClick={()=>addToCart(item, "kg", item.kg)} title="Добавить">➕</button>
+                              )}
+                            </div>
+                          </td>
+
+                          <td className="mono td-price" data-label="500 г">
+                            <div className="pricecell">
+                              <span>{item.g500 || "—"}</span>
+                              {item.g500 && item.g500 !== "—" && (
+                                <button className="add-btn" onClick={()=>addToCart(item, "g500", item.g500)} title="Добавить">➕</button>
+                              )}
+                            </div>
+                          </td>
+
+                          <td className="mono td-price" data-label="250 г">
+                            <div className="pricecell">
+                              <span>{item.g250 || "—"}</span>
+                              {item.g250 && item.g250 !== "—" && (
+                                <button className="add-btn" onClick={()=>addToCart(item, "g250", item.g250)} title="Добавить">➕</button>
+                              )}
+                            </div>
+                          </td>
+
+                          <td className="td-price" data-label="Фасовка">
+                            <div className="pricecell">
+                              <span>{item.pack || "—"}</span>
+                              {item.pack && item.pack !== "—" && (
+                                <button className="add-btn" onClick={()=>addToCart(item, "pack", item.pack)} title="Добавить">➕</button>
+                              )}
+                            </div>
+                          </td>
+
+                          <td className="muted td-note" style={{fontSize:"12px"}}>
+                            {item.note || "—"}
+                          </td>
                         </tr>
-                      </thead>
+                      ))}
+                    </tbody>
 
-                      <tbody>
-                        {block.items.map((item, idx) => (
-                          <tr key={idx}>
-                            <td>
-                              <div className="name">{item.name}</div>
-                            </td>
-
-                            {showCol("kg") && (
-                              <td className="mono td-price" data-label="1 кг">
-                                <div className="pricecell">
-                                  <span>{item.kg || "—"}</span>
-                                  {item.kg && item.kg !== "—" && (
-                                    <button className="add-btn" onClick={()=>addToCart(item, "kg", item.kg)} title="Добавить">➕</button>
-                                  )}
-                                </div>
-                              </td>
-                            )}
-
-                            {showCol("g500") && (
-                              <td className="mono td-price" data-label="500 г">
-                                <div className="pricecell">
-                                  <span>{item.g500 || "—"}</span>
-                                  {item.g500 && item.g500 !== "—" && (
-                                    <button className="add-btn" onClick={()=>addToCart(item, "g500", item.g500)} title="Добавить">➕</button>
-                                  )}
-                                </div>
-                              </td>
-                            )}
-
-                            {showCol("g250") && (
-                              <td className="mono td-price" data-label="250 г">
-                                <div className="pricecell">
-                                  <span>{item.g250 || "—"}</span>
-                                  {item.g250 && item.g250 !== "—" && (
-                                    <button className="add-btn" onClick={()=>addToCart(item, "g250", item.g250)} title="Добавить">➕</button>
-                                  )}
-                                </div>
-                              </td>
-                            )}
-
-                            {showCol("pack") && (
-                              <td className="td-price" data-label="Фасовка">
-                                <div className="pricecell">
-                                  <span>{item.pack || "—"}</span>
-                                  {item.pack && item.pack !== "—" && (
-                                    <button className="add-btn" onClick={()=>addToCart(item, "pack", item.pack)} title="Добавить">➕</button>
-                                  )}
-                                </div>
-                              </td>
-                            )}
-
-                            <td className="muted td-note" style={{fontSize:"12px"}}>
-                              {item.note || "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-
-                    </table>
-                  </div>
-                </section>
-              ))
-            )}
+                  </table>
+                </div>
+              </section>
+            ))}
           </main>
 
-          {/* Cart */}
           <div className={"backdrop" + (cartOpen ? " open" : "")} onClick={()=>setCartOpen(false)} />
           <aside className={"cart" + (cartOpen ? " open" : "")} aria-label="Корзина">
             <div className="cart-head">
@@ -798,7 +733,6 @@
             ) : (
               <>
                 <div className="cart-body">
-                  {/* ✅ Форма клиента */}
                   <div className="form">
                     <h4>Данные для заказа</h4>
 
@@ -865,7 +799,6 @@
                 </div>
 
                 <div className="cart-foot">
-                  {/* ✅ Toast вместо alert/confirm */}
                   <div className={"toastwrap" + (noticeOpen && notice ? " show" : "")} aria-live="polite">
                     <div className="toast">
                       <span className="dot" />
@@ -892,7 +825,6 @@
                         Очистить корзину
                       </button>
 
-                      {/* ✅ без alert */}
                       <button className="btn" onClick={()=>{
                         if (!cartItems.length){
                           showNotice("Корзина пуста. Добавьте товары для оформления.");
