@@ -175,7 +175,7 @@
       }
     }
 
-    /* Cart (без framer-motion, но с плавной анимацией) */
+    /* Cart */
     .backdrop{
       position:fixed;inset:0;z-index:40;
       background: rgba(0,0,0,0.4);
@@ -285,8 +285,7 @@
   <script type="text/babel">
     const { useEffect, useMemo, useState } = React;
 
-    // 1) Менеджер Telegram (без @)
-    const TELEGRAM_USERNAME = "OrEx_zakaz"; // <-- поменяй
+    const TELEGRAM_USERNAME = "username"; // <-- поменяй
 
     const data = [
       {
@@ -414,7 +413,6 @@
       },
     ];
 
-    // Берёт цену корректно даже из "Стекло 0,25 л — 35р" (берём ПОСЛЕДНЕЕ число перед "р")
     const parsePrice = (priceStr) => {
       if (!priceStr || priceStr === "—") return 0;
       const s = String(priceStr);
@@ -451,20 +449,21 @@
       // ✅ форма клиента
       const [clientName, setClientName] = useState("");
       const [clientPhone, setClientPhone] = useState("");
+      const [clientAddress, setClientAddress] = useState(""); // ✅ добавлено поле Адрес доставки
 
-      // (опционально) сохранить форму в localStorage
       useEffect(() => {
         try{
           const saved = JSON.parse(localStorage.getItem("rm_client") || "{}");
           if (saved.name) setClientName(saved.name);
           if (saved.phone) setClientPhone(saved.phone);
+          if (saved.address) setClientAddress(saved.address); // ✅ загрузка адреса
         }catch(e){}
       }, []);
       useEffect(() => {
         try{
-          localStorage.setItem("rm_client", JSON.stringify({name: clientName, phone: clientPhone}));
+          localStorage.setItem("rm_client", JSON.stringify({name: clientName, phone: clientPhone, address: clientAddress}));
         }catch(e){}
-      }, [clientName, clientPhone]);
+      }, [clientName, clientPhone, clientAddress]);
 
       const totalItems = cartItems.reduce((s, it) => s + it.quantity, 0);
       const totalPrice = cartItems.reduce((s, it) => s + it.priceValue * it.quantity, 0);
@@ -521,16 +520,17 @@
       const removeFromCart = (id) => setCartItems(cartItems.filter(it => it.id !== id));
       const clearCart = () => setCartItems([]);
 
-      // ✅ текст заказа с именем/телефоном
       const orderText = useMemo(() => {
         const lines = [];
         const nameLine = clientName.trim() ? `👤 Имя: ${clientName.trim()}` : `👤 Имя: (не указано)`;
         const phoneLine = clientPhone.trim() ? `📞 Телефон: ${clientPhone.trim()}` : `📞 Телефон: (не указан)`;
+        const addrLine = clientAddress.trim() ? `📍 Адрес доставки: ${clientAddress.trim()}` : `📍 Адрес доставки: (не указан)`;
 
         lines.push("Здравствуйте! Хочу оформить заказ:");
         lines.push("");
         lines.push(nameLine);
         lines.push(phoneLine);
+        lines.push(addrLine);
         lines.push("");
 
         if (!cartItems.length){
@@ -547,7 +547,7 @@
         lines.push("");
         lines.push(`ИТОГО: ${formatMoney(totalPrice)}`);
         return lines.join("\n");
-      }, [cartItems, totalPrice, clientName, clientPhone]);
+      }, [cartItems, totalPrice, clientName, clientPhone, clientAddress]);
 
       const openTelegram = () => {
         const username = (TELEGRAM_USERNAME || "").replace(/^@/, "").trim();
@@ -555,9 +555,8 @@
           alert("Укажи TELEGRAM_USERNAME в коде (без @).");
           return;
         }
-        // Небольшая валидация перед отправкой
-        if (!clientName.trim() || !clientPhone.trim()){
-          const ok = confirm("Имя или телефон не заполнены. Отправить заказ всё равно?");
+        if (!clientName.trim() || !clientPhone.trim() || !clientAddress.trim()){
+          const ok = confirm("Имя, телефон или адрес не заполнены. Отправить заказ всё равно?");
           if (!ok) return;
         }
         const url = `https://t.me/${encodeURIComponent(username)}?text=${encodeURIComponent(orderText)}`;
@@ -746,7 +745,7 @@
                       />
                     </div>
 
-                    <div className="field" style={{marginBottom:0}}>
+                    <div className="field">
                       <label>Телефон</label>
                       <input
                         value={clientPhone}
@@ -754,7 +753,18 @@
                         placeholder="+375 29 123-45-67"
                         autoComplete="tel"
                       />
-                      <div className="hint">Эти данные автоматически добавятся в сообщение Telegram.</div>
+                    </div>
+
+                    {/* ✅ добавлено поле Адрес доставки */}
+                    <div className="field" style={{marginBottom:0}}>
+                      <label>Адрес доставки</label>
+                      <input
+                        value={clientAddress}
+                        onChange={(e)=>setClientAddress(e.target.value)}
+                        placeholder="Улица, дом, квартира"
+                        autoComplete="street-address"
+                      />
+                      <div className="hint">Имя, телефон и адрес автоматически добавятся в сообщение Telegram.</div>
                     </div>
                   </div>
 
