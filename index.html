@@ -270,12 +270,55 @@
       margin-top:10px;
     }
 
-    @media print{
-      header, .chips, .btn, .add-btn, .backdrop, .cart {display:none !important;}
-      body{background:#fff}
-      .section{box-shadow:none;border-radius:0}
-      thead th{position:static}
+    /* ✅ iOS-like toast (внутри корзины, без alert/confirm) */
+    .toastwrap{
+      overflow:hidden;
+      max-height:0;
+      opacity:0;
+      transform: translateY(8px);
+      transition: max-height .28s ease, opacity .22s ease, transform .22s ease;
+      margin-bottom:0;
     }
+    .toastwrap.show{
+      max-height:120px;
+      opacity:1;
+      transform: translateY(0);
+      margin-bottom:10px;
+    }
+    .toast{
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(10px);
+      border:1px solid var(--border);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.12);
+      border-radius: 14px;
+      padding:10px 12px;
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .toast .dot{
+      width:10px;height:10px;border-radius:99px;
+      background: var(--dark);
+      margin-top:4px;
+      flex:0 0 auto;
+    }
+    .toast .ttext{
+      font-size:13px;
+      color: var(--dark);
+      line-height:1.35;
+      flex:1 1 auto;
+    }
+    .toast .tbtn{
+      border:0;
+      background:transparent;
+      cursor:pointer;
+      font-size:18px;
+      line-height:1;
+      padding:0 2px;
+      color: var(--muted);
+      flex:0 0 auto;
+    }
+    .toast .tbtn:hover{color: var(--dark)}
   </style>
 </head>
 
@@ -285,7 +328,7 @@
   <script type="text/babel">
     const { useEffect, useMemo, useState } = React;
 
-    const TELEGRAM_USERNAME = "OrEx_zakaz"; // <-- поменяй
+    const TELEGRAM_USERNAME = "OrEx_zakaz"; // <-- поменяй (без @)
 
     const data = [
       {
@@ -449,14 +492,31 @@
       // ✅ форма клиента
       const [clientName, setClientName] = useState("");
       const [clientPhone, setClientPhone] = useState("");
-      const [clientAddress, setClientAddress] = useState(""); // ✅ добавлено поле Адрес доставки
+      const [clientAddress, setClientAddress] = useState("");
+
+      // ✅ toast (вместо alert/confirm)
+      const [notice, setNotice] = useState("");
+      const [noticeOpen, setNoticeOpen] = useState(false);
+
+      const showNotice = (msg) => {
+        setNotice(msg);
+        setNoticeOpen(true);
+      };
+      const hideNotice = () => setNoticeOpen(false);
+
+      // auto-hide
+      useEffect(() => {
+        if (!noticeOpen) return;
+        const t = setTimeout(() => setNoticeOpen(false), 2600);
+        return () => clearTimeout(t);
+      }, [noticeOpen, notice]);
 
       useEffect(() => {
         try{
           const saved = JSON.parse(localStorage.getItem("rm_client") || "{}");
           if (saved.name) setClientName(saved.name);
           if (saved.phone) setClientPhone(saved.phone);
-          if (saved.address) setClientAddress(saved.address); // ✅ загрузка адреса
+          if (saved.address) setClientAddress(saved.address);
         }catch(e){}
       }, []);
       useEffect(() => {
@@ -551,14 +611,21 @@
 
       const openTelegram = () => {
         const username = (TELEGRAM_USERNAME || "").replace(/^@/, "").trim();
+
         if (!username){
-          alert("Укажи TELEGRAM_USERNAME в коде (без @).");
+          showNotice("Укажи TELEGRAM_USERNAME в коде (без @).");
+          return;
+        }
+        if (!cartItems.length){
+          showNotice("Корзина пуста. Добавьте товары перед отправкой заказа.");
           return;
         }
         if (!clientName.trim() || !clientPhone.trim() || !clientAddress.trim()){
-          const ok = confirm("Имя, телефон или адрес не заполнены. Отправить заказ всё равно?");
-          if (!ok) return;
+          showNotice("Заполните имя, телефон и адрес доставки перед отправкой заказа.");
+          return;
         }
+
+        hideNotice();
         const url = `https://t.me/${encodeURIComponent(username)}?text=${encodeURIComponent(orderText)}`;
         window.open(url, "_blank", "noopener,noreferrer");
       };
@@ -755,13 +822,12 @@
                       />
                     </div>
 
-                    {/* ✅ добавлено поле Адрес доставки */}
                     <div className="field" style={{marginBottom:0}}>
                       <label>Адрес доставки</label>
                       <input
                         value={clientAddress}
                         onChange={(e)=>setClientAddress(e.target.value)}
-                        placeholder="Улица, дом, квартира"
+                        placeholder="Город, улица, дом, квартира"
                         autoComplete="street-address"
                       />
                       <div className="hint">Имя, телефон и адрес автоматически добавятся в сообщение Telegram.</div>
@@ -799,6 +865,15 @@
                 </div>
 
                 <div className="cart-foot">
+                  {/* ✅ Toast вместо alert/confirm */}
+                  <div className={"toastwrap" + (noticeOpen && notice ? " show" : "")} aria-live="polite">
+                    <div className="toast">
+                      <span className="dot" />
+                      <div className="ttext">{notice}</div>
+                      <button className="tbtn" onClick={hideNotice} aria-label="Закрыть уведомление">×</button>
+                    </div>
+                  </div>
+
                   <div className="totals">
                     <span>Итого:</span>
                     <b>{formatMoney(totalPrice)}</b>
@@ -810,9 +885,20 @@
                     </button>
 
                     <div className="two">
-                      <button className="btn" onClick={clearCart}>Очистить корзину</button>
                       <button className="btn" onClick={()=>{
-                        alert(`Заказ сформирован на сумму ${formatMoney(totalPrice)}.\n\nНажмите "Отправить заказ в Telegram", чтобы написать менеджеру.`);
+                        clearCart();
+                        hideNotice();
+                      }}>
+                        Очистить корзину
+                      </button>
+
+                      {/* ✅ без alert */}
+                      <button className="btn" onClick={()=>{
+                        if (!cartItems.length){
+                          showNotice("Корзина пуста. Добавьте товары для оформления.");
+                          return;
+                        }
+                        showNotice(`Заказ сформирован на сумму ${formatMoney(totalPrice)}. Нажмите “Отправить заказ в Telegram”.`);
                       }}>
                         Оформить заказ
                       </button>
