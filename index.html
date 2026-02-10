@@ -1,66 +1,827 @@
-<!DOCTYPE html>
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ROYAL MARKET — Прайс</title>
 
-<html class="js no-touch progressive-image no-ios no-ie no-edge no-safari no-firefox windows no-reduced-motion no-static" 
-	xmlns="http://www.w3.org/1999/xhtml" 
-	xml:lang="en-US" 
-	lang="en-US" 
-	
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- React (CDN, без сборки) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel чтобы писать JSX прямо в одном HTML -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-	
-	
-		<link rel="stylesheet" type="text/css" href="./Inclusion &amp; Diversity_files/globalheader.css">
-		<link rel="stylesheet" type="text/css" href="./Inclusion &amp; Diversity_files/ac-globalfooter.built.css">
-	
-	<link rel="stylesheet" type="text/css" href="./Inclusion &amp; Diversity_files/ac-localnav.built.css">
+  <style>
+    :root{
+      --bg:#faf7f3;
+      --text:#1c1c1c;
+      --muted:#6b6b6b;
+      --border:#e7ded4;
+      --card:#ffffff;
+      --chip:#f2ece6;
+      --dark:#2f2a25;
+      --dark2:#25211d;
+      --shadow: 0 10px 30px rgba(0,0,0,0.06);
+      --radius: 16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .container{max-width:1100px;margin:0 auto;padding:0 16px;}
+    header{
+      position:sticky;top:0;z-index:20;
+      background: rgba(250,247,243,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .header-top{padding:12px 0}
+    .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+    .brand{min-width:220px}
+    .brand b{display:block;font-size:18px;letter-spacing:.2px}
+    .brand span{display:block;color:var(--muted);font-size:13px}
+    .controls{flex:1;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+    .search{
+      flex:1;min-width:240px;
+      display:flex;align-items:center;gap:8px;
+      background:#fff;border:1px solid var(--border);
+      border-radius:999px;padding:10px 14px;
+      box-shadow: var(--shadow);
+    }
+    .search input{width:100%;border:0;outline:0;background:transparent;font-size:14px}
+    .pill{
+      background:#fff;border:1px solid var(--border);
+      border-radius:999px;padding:8px 12px;
+      display:flex;align-items:center;gap:8px;
+      box-shadow: var(--shadow);
+      font-size:14px;
+    }
+    .pill select{border:0;outline:0;background:transparent;font-size:14px}
+    .btn{
+      border:1px solid rgba(0,0,0,0.08);
+      border-radius:999px;padding:10px 14px;
+      background:#fff;cursor:pointer;
+      box-shadow: var(--shadow);
+      transition: background .15s ease, transform .05s ease;
+    }
+    .btn:active{transform: translateY(1px)}
+    .btn-dark{
+      background: var(--dark);
+      color:#fff;
+    }
+    .btn-dark:hover{background: var(--dark2)}
+    .btn:hover{background: var(--chip)}
+    .cart-btn{position:relative;display:flex;align-items:center;gap:6px}
+    .badge{
+      position:absolute;top:-6px;right:-6px;
+      width:20px;height:20px;border-radius:999px;
+      background: var(--dark);color:#fff;
+      font-size:12px;display:flex;align-items:center;justify-content:center;
+    }
+    .chips{padding:8px 0 12px}
+    .chip{
+      cursor:pointer; user-select:none;
+      display:inline-flex; align-items:center;
+      padding:8px 12px;border-radius:999px;
+      font-size:14px;
+      background: var(--chip);
+      border:1px solid var(--border);
+      color: var(--dark);
+      margin:0 8px 8px 0;
+    }
+    .chip.active{
+      background: var(--dark);
+      color:#fff;
+      border-color: rgba(0,0,0,0.08);
+    }
 
-	<title>Demesh</title>
-	
-	<link rel="stylesheet" href="./Inclusion &amp; Diversity_files/fonts">
-	<link rel="stylesheet" href="./Inclusion &amp; Diversity_files/main.built.css" type="text/css">
-	<link rel="stylesheet" href="./Inclusion &amp; Diversity_files/overview.built.css" type="text/css">
-	<script src="./Inclusion &amp; Diversity_files/head.built.js.Без названия" type="text/javascript" charset="utf-8"></script>
+    main{padding:10px 0 28px}
+    .section{
+      background: var(--card);
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      margin-bottom:14px;
+    }
+    .section h2{
+      margin:0;
+      padding:12px 16px;
+      font-size:14px;
+      letter-spacing:.2px;
+      border-bottom:1px solid var(--border);
+      background: linear-gradient(to bottom, rgba(255,255,255,0.9), #fff);
+      position:sticky;
+      top:92px;
+      z-index:10;
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+    }
+    .section h2 small{color:var(--muted);font-weight:600}
+    table{width:100%;border-collapse:collapse}
+    thead th{
+      position:sticky;top:106px;z-index:9;
+      background:#fff;
+      font-size:12px;color:var(--muted);
+      text-align:left;
+      padding:10px 16px;
+      border-bottom:1px solid var(--border);
+    }
+    thead th.right{text-align:right}
+    tbody td{
+      padding:12px 16px;
+      vertical-align:top;
+      border-bottom:1px solid var(--border);
+      font-size:14px;
+    }
+    tbody tr:last-child td{border-bottom:0}
+    .name{font-weight:700}
+    .mono{font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    .muted{color:var(--muted)}
+    .pricecell{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .add-btn{
+      border:0;background:transparent;
+      cursor:pointer;font-size:18px;line-height:1;
+      transition: transform .05s ease, opacity .15s ease;
+    }
+    .add-btn:active{transform: translateY(1px)}
+    .add-btn:hover{opacity:.75}
+
+    /* Mobile table -> cards */
+    @media (max-width: 720px){
+      thead{display:none}
+      table, tbody, tr, td{display:block;width:100%}
+      tbody td{border-bottom:0;padding:10px 16px}
+      tbody tr{border-bottom:1px solid var(--border);padding:6px 0}
+      .section h2{top:92px}
+      .td-price{
+        text-align:left;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+      }
+      .td-price::before{
+        content: attr(data-label) ": ";
+        color: var(--muted);
+        font-size:12px;
+        flex:1;
+      }
+      .td-note::before{
+        content:"Примечание: ";
+        color:var(--muted);
+        font-size:12px;
+      }
+    }
+
+    /* Cart (без framer-motion, но с плавной анимацией) */
+    .backdrop{
+      position:fixed;inset:0;z-index:40;
+      background: rgba(0,0,0,0.4);
+      opacity:0;pointer-events:none;
+      transition: opacity .25s ease;
+    }
+    .backdrop.open{opacity:1;pointer-events:auto}
+    .cart{
+      position:fixed;top:0;right:0;height:100%;
+      width:100%;max-width:420px;
+      background:#fff;z-index:50;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      transform: translateX(100%);
+      transition: transform .25s ease;
+      display:flex;flex-direction:column;
+    }
+    .cart.open{transform: translateX(0)}
+    .cart-head{
+      padding:14px 16px;
+      border-bottom:1px solid var(--border);
+      background: var(--bg);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+    }
+    .cart-head h3{margin:0;font-size:20px}
+    .xbtn{
+      border:0;background:transparent;
+      font-size:28px;cursor:pointer;line-height:1;
+      padding:4px 8px;
+    }
+    .cart-body{padding:14px 16px;overflow:auto;flex:1}
+    .cart-foot{
+      padding:14px 16px;
+      border-top:1px solid var(--border);
+      background: var(--bg);
+    }
+    .item{
+      padding:12px 0;
+      border-bottom:1px solid var(--border);
+    }
+    .item:last-child{border-bottom:0}
+    .item-top{display:flex;justify-content:space-between;gap:10px;margin-bottom:6px}
+    .qty{
+      display:inline-flex;align-items:center;
+      background: var(--chip);
+      border-radius:999px;
+      overflow:hidden;
+    }
+    .qty button{
+      width:32px;height:32px;border:0;background:transparent;
+      cursor:pointer;font-size:18px;
+      transition: background .15s ease;
+    }
+    .qty button:hover{background: var(--border)}
+    .qty span{min-width:44px;text-align:center;padding:0 8px}
+    .trash{
+      margin-top:8px;
+      border:0;background:transparent;
+      cursor:pointer;
+      color: var(--dark);
+      font-size:14px;
+      display:inline-flex;align-items:center;gap:6px;
+    }
+    .trash:hover{color:var(--muted)}
+    .totals{display:flex;justify-content:space-between;align-items:center;font-size:18px;margin:10px 0 14px}
+    .totals b{font-size:20px}
+    .stack{display:flex;flex-direction:column;gap:10px}
+    .two{display:flex;gap:10px}
+    .two > *{flex:1}
+
+    /* Form in cart */
+    .form{
+      border:1px solid var(--border);
+      background:#fff;
+      border-radius: 14px;
+      padding:12px;
+      margin-bottom:12px;
+    }
+    .form h4{margin:0 0 8px;font-size:14px}
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+    .field label{font-size:12px;color:var(--muted)}
+    .field input{
+      padding:10px 12px;
+      border-radius: 12px;
+      border:1px solid var(--border);
+      outline:0;
+      font-size:14px;
+      background:#fff;
+    }
+    .hint{font-size:12px;color:var(--muted);margin-top:6px}
+    .footer-note{
+      font-size:12px;color:var(--muted);text-align:center;line-height:1.4;
+      margin-top:10px;
+    }
+
+    @media print{
+      header, .chips, .btn, .add-btn, .backdrop, .cart {display:none !important;}
+      body{background:#fff}
+      .section{box-shadow:none;border-radius:0}
+      thead th{position:static}
+    }
+  </style>
 </head>
-<body class="page-overview " data-anim-scroll-group="body">
-	
 
+<body>
+  <div id="root"></div>
 
+  <script type="text/babel">
+    const { useEffect, useMemo, useState } = React;
 
-    
-    
+    // 1) Менеджер Telegram (без @)
+    const TELEGRAM_USERNAME = "username"; // <-- поменяй
 
+    const data = [
+      {
+        cat: "Орехи",
+        items: [
+          {name:"Арахис жареный", kg:"15р", g500:"8р", g250:"4,5р"},
+          {name:"Арахис жареный солёный", kg:"15р", g500:"8р", g250:"4,5р"},
+          {name:"Арахис сырой красный", kg:"15р", g500:"8р", g250:"4,5р"},
+          {name:"Бобы жареные солёные", kg:"27р", g500:"14р", g250:"7,5р"},
+          {name:"Бразильский орех", kg:"135р", g500:"68,5р", g250:"35р"},
+          {name:"Грецкий орех", kg:"40р", g500:"20,5р", g250:"11р"},
+          {name:"Грецкий орех в скорлупе", kg:"16р", g500:"8,5р", g250:"5р"},
+          {name:"Кедровый орех", kg:"135р", g500:"68,5р", g250:"35р"},
+          {name:"Кешью жареный", kg:"45р", g500:"23р", g250:"12р"},
+          {name:"Кешью сырой очищенный", kg:"45р", g500:"23р", g250:"12р"},
+          {name:"Миндаль жареный", kg:"45р", g500:"23р", g250:"12р"},
+          {name:"Миндаль сырой очищенный", kg:"45р", g500:"23р", g250:"12р"},
+          {name:"Фундук жареный", kg:"45р", g500:"23р", g250:"12р"},
+          {name:"Фундук сырой очищенный", kg:"45р", g500:"23р", g250:"12р"},
+          {name:"Пекан неочищенный", kg:"50р", g500:"25,5р", g250:"13,5р"},
+          {name:"Фисташка жареная солёная", kg:"70р", g500:"35,5р", g250:"18,5р"},
+          {name:"Макадамия неочищенная", kg:"40р", g500:"20,5р", g250:"11р"},
+          {name:"Зерно кукурузы для попкорна", kg:"10р", g500:"5,5р", g250:"3,5р"},
+        ]
+      },
+      {
+        cat: "Сухофрукты",
+        items: [
+          {name:"Ананас цукаты (кубики)", kg:"25р", g500:"13р", g250:"7р"},
+          {name:"Банановые чипсы", kg:"25р", g500:"13р", g250:"7р"},
+          {name:"Вишня натуральная сушеная", kg:"40р", g500:"20,5р", g250:"11р"},
+          {name:"Изюм GOLD «дамские пальчики»", kg:"20р", g500:"10,5р", g250:"6р"},
+          {name:"Изюм JUMBO тёмный", kg:"30р", g500:"15,5р", g250:"8,5р"},
+          {name:"Инжир натуральный горный", kg:"40р", g500:"20,5р", g250:"11р"},
+          {name:"Киви натуральный сушеный", kg:"25р", g500:"13р", g250:"7р"},
+          {name:"Клюква натуральная сушеная (подслащенная)", kg:"35р", g500:"18р", g250:"10р"},
+          {name:"Курага натуральная", kg:"30р", g500:"15,5р", g250:"8,5р"},
+          {name:"Манго натуральный сушеный", kg:"35р", g500:"18р", g250:"10р"},
+          {name:"Урюк (абрикос с косточкой)", kg:"30р", g500:"15,5р", g250:"8,5р"},
+          {name:"Финик королевский PREMIUM JUMBO", kg:"65р", g500:"33р", g250:"17р"},
+          {name:"Финик с косточкой", kg:"15р", g500:"8р", g250:"4,5р"},
+          {name:"Клубника натуральная сушеная", kg:"50р", g500:"25,5р", g250:"13,5р"},
+          {name:"Персик натуральный сушеный", kg:"30р", g500:"15,5р", g250:"8,5р"},
+          {name:"Маракуйя натуральная сушеная", kg:"40р", g500:"20,5р", g250:"11р"},
+          {name:"Дыня косичка", kg:"20р", g500:"10,5р", g250:"6р",
+            note:"Сушёная дыня, нарезанная тонкими полосками и заплетенная в «косички»"},
+          {name:"Хаштак", pack:"Лоток 500 г — 10р",
+            note:"Натуральная курага, фаршированная грецким орехом и изюмом, покрытая мёдом"},
+          {name:"Шиповник сушеный", kg:"15р", g500:"8р", g250:"4,5р"},
+        ]
+      },
+      {
+        cat: "Масло, консервация и специи",
+        items: [
+          {name:"Масло кедрового ореха холодного отжима (нераф.)", pack:"Стекло 0,25 л — 35р"},
+          {name:"Масло авокадо (раф.)", pack:"Стекло 1 л — 35р"},
+          {name:"Натуральный гранатовый сок прямого отжима", pack:"Стекло 1 л — 20р"},
+          {name:"Наршараб (соус гранатовый)", pack:"Стекло 0,33 л — 10р"},
+          {name:"Приправа универсальная", kg:"50р", g500:"25,5р", g250:"13,5р"},
+          {name:"Приправа для морепродуктов", kg:"50р", g500:"25,5р", g250:"13,5р"},
+        ]
+      },
+      {
+        cat: "Смеси",
+        items: [
+          {name:"Смесь для компота", kg:"20р", g500:"10,5р", g250:"6р",
+            note:"Абрикос с косточкой, яблоко, черешня с косточкой, груша, персик, чернослив с косточкой, айва с косточкой"},
+          {name:"Смесь семян для салата", pack:"Банка 400 г — 15р",
+            note:"Семечка подсолнечника, семена льна, кунжут белый/чёрный, семена тыквы очищенные"},
+          {name:"Микс для йогуртов и каш", kg:"70р", g500:"35,5р", g250:"18,5р",
+            note:"Кедровый орех, манго, инжир, клюква, курага, персик, вишня, клубника, маракуйя"},
+        ]
+      },
+      {
+        cat: "Мармелад",
+        items: [
+          {name:"Мармелад жевательный «Кислые червяки»", kg:"25р", g500:"13,0р", g250:"7р"},
+          {name:"Мармелад жевательный «Медведи»", kg:"25р", g500:"13,0р", g250:"7р"},
+          {name:"Мармелад жевательный «Тропические фрукты»", kg:"25р", g500:"13,0р", g250:"7р"},
+          {name:"Жевательные конфеты «Фрутомикс»", kg:"25р", g500:"13,0р", g250:"7р"},
+        ]
+      },
+      {
+        cat: "Чай",
+        items: [
+          {name:"Чай зелёный китайский с жасмином OP", kg:"40р", g500:"20,5р", g250:"11р"},
+          {name:"Чай чёрный Pekoe", kg:"40р", g500:"20,5р", g250:"11р"},
+          {name:"Чай каркаде", kg:"40р", g500:"20,5р", g250:"11р"},
+        ]
+      },
+      {
+        cat: "Семена",
+        items: [
+          {name:"Кунжут белый", kg:"20р", g500:"10,5р", g250:"6р"},
+          {name:"Кунжут чёрный", kg:"30р", g500:"15,5р", g250:"8,5р"},
+          {name:"Семечки тыквенные очищенные", kg:"30р", g500:"15,5р", g250:"8,5р"},
+          {name:"Семена чиа чёрные", kg:"30р", g500:"15,5р", g250:"8,5р"},
+        ]
+      },
+      {
+        cat: "Крафтовые смеси",
+        items: [
+          {name:"Смесь «ОРЕХОВАЯ»", kg:"45р", g500:"23р", g250:"12,5р",
+            note:"Кешью жареный, миндаль жареный, фундук жареный, грецкий орех очищенный"},
+          {name:"Смесь «К ПЕННОМУ»", kg:"40р", g500:"20,5р", g250:"11р",
+            note:"Арахис солёный, кешью солёный, миндаль солёный, фундук солёный, бобы солёные"},
+          {name:"Смесь «ЭКЗОТИЧЕСКАЯ»", kg:"45р", g500:"23р", g250:"12,5р",
+            note:"Клубника, маракуйя, персик, манго, киви, вишня, банановые чипсы, клюква, ананас (цукаты)"},
+        ]
+      },
+      {
+        cat: "Кондитерские изделия",
+        items: [
+          {name:"Кокосан (фундук в белой шоколадной глазури с кокосовой стружкой)", kg:"65р", g500:"33р", g250:"17р",
+            note:"Аналог «Рафаэлло»"},
+          {name:"Натуральные кофейные зёрна в молочном шоколаде", kg:"65р", g500:"33р", g250:"17р"},
+          {name:"Натуральная клубника в белом шоколаде", kg:"50р", g500:"25,5р", g250:"13,5р"},
+          {name:"Конфеты «ECO FOODS» (ручная работа)", kg:"35р", g500:"18р", g250:"10р",
+            note:"Персик с грецким орехом, банан, грейпфрут, чернослив, фундук по-швейцарски, курага — в шоколаде"},
+          {name:"Крем арахисовый", pack:"Банка 250 г — 13р"},
+          {name:"Крем ореховый миндальный с какао", pack:"Банка 250 г — 20р"},
+          {name:"Крем ореховый фисташковый", pack:"Банка 250 г — 30р"},
+          {name:"Халва с фисташкой", pack:"Упаковка 200 г — 13р"},
+        ]
+      },
+    ];
 
-	
+    // Берёт цену корректно даже из "Стекло 0,25 л — 35р" (берём ПОСЛЕДНЕЕ число перед "р")
+    const parsePrice = (priceStr) => {
+      if (!priceStr || priceStr === "—") return 0;
+      const s = String(priceStr);
+      const matches = [...s.matchAll(/(\d+(?:[.,]\d+)?)(?=\s*р)/gi)];
+      if (matches.length) {
+        const last = matches[matches.length - 1][1].replace(',', '.');
+        const n = parseFloat(last);
+        return Number.isFinite(n) ? n : 0;
+      }
+      const m2 = s.match(/(\d+(?:[.,]\d+)?)/);
+      if (!m2) return 0;
+      const n2 = parseFloat(m2[1].replace(',', '.'));
+      return Number.isFinite(n2) ? n2 : 0;
+    };
 
+    const getWeightLabel = (t) => {
+      if (t === "kg") return "1 кг";
+      if (t === "g500") return "500 г";
+      if (t === "g250") return "250 г";
+      if (t === "pack") return "фасовка";
+      return t;
+    };
 
+    const formatMoney = (n) => (Number(n || 0).toFixed(1)).replace('.', ',') + "р";
 
+    function App(){
+      const [activeCategory, setActiveCategory] = useState("Все");
+      const [searchQuery, setSearchQuery] = useState("");
+      const [weightFilter, setWeightFilter] = useState("all");
 
-	
-	
-	
-	
+      const [cartOpen, setCartOpen] = useState(false);
+      const [cartItems, setCartItems] = useState([]);
 
-	<main id="main" class="main" role="main" data-page-type="overview">
-		<section id="hero" class="section section-hero" data-analytics-section-engagement="name:hero">
-			<div class="section-content">
-				<h1 class="hero-headline typography-hero-headline">Привет! Скоро что-то будет.</h1>
-				
-			</div>
-		</section>
-		
-		
-		
-		
-		
-		
-		
-		
-	</main>
-	<!--/main-->
-	
-	
-	
-	
+      // ✅ форма клиента
+      const [clientName, setClientName] = useState("");
+      const [clientPhone, setClientPhone] = useState("");
 
+      // (опционально) сохранить форму в localStorage
+      useEffect(() => {
+        try{
+          const saved = JSON.parse(localStorage.getItem("rm_client") || "{}");
+          if (saved.name) setClientName(saved.name);
+          if (saved.phone) setClientPhone(saved.phone);
+        }catch(e){}
+      }, []);
+      useEffect(() => {
+        try{
+          localStorage.setItem("rm_client", JSON.stringify({name: clientName, phone: clientPhone}));
+        }catch(e){}
+      }, [clientName, clientPhone]);
 
-</body><div cssdimensionstracker="true" style="position: fixed; top: 0px; width: 100%; height: 100vh; pointer-events: none; visibility: hidden; z-index: -1;"></div></html>
+      const totalItems = cartItems.reduce((s, it) => s + it.quantity, 0);
+      const totalPrice = cartItems.reduce((s, it) => s + it.priceValue * it.quantity, 0);
+
+      const categories = useMemo(() => ["Все", ...data.map(b => b.cat)], []);
+
+      const showCol = (col) => {
+        if (weightFilter === "all") return true;
+        if (weightFilter === "pack") return col === "pack";
+        return weightFilter === col;
+      };
+
+      const rowMatches = (item, q) => {
+        if (!q.trim()) return true;
+        const text = (item.name + " " + (item.note||"") + " " + (item.pack||"")).toLowerCase();
+        return text.includes(q.toLowerCase());
+      };
+
+      const filteredBlocks = useMemo(() => {
+        return data
+          .filter(b => activeCategory === "Все" || b.cat === activeCategory)
+          .map(b => ({...b, items: b.items.filter(it => rowMatches(it, searchQuery))}))
+          .filter(b => b.items.length > 0);
+      }, [activeCategory, searchQuery]);
+
+      const addToCart = (item, weightType, priceStr) => {
+        const priceValue = parsePrice(priceStr);
+        if (priceValue <= 0) return;
+
+        const id = `${item.name}-${weightType}`;
+        const existing = cartItems.find(i => i.id === id);
+
+        if (existing){
+          setCartItems(cartItems.map(i => i.id === id ? {...i, quantity: i.quantity + 1} : i));
+        }else{
+          setCartItems([...cartItems, {
+            id,
+            name: item.name,
+            weightType,
+            priceStr,
+            priceValue,
+            quantity: 1,
+            note: item.note
+          }]);
+        }
+        setCartOpen(true);
+      };
+
+      const updateQuantity = (id, qty) => {
+        if (qty < 1) return removeFromCart(id);
+        setCartItems(cartItems.map(it => it.id === id ? {...it, quantity: qty} : it));
+      };
+
+      const removeFromCart = (id) => setCartItems(cartItems.filter(it => it.id !== id));
+      const clearCart = () => setCartItems([]);
+
+      // ✅ текст заказа с именем/телефоном
+      const orderText = useMemo(() => {
+        const lines = [];
+        const nameLine = clientName.trim() ? `👤 Имя: ${clientName.trim()}` : `👤 Имя: (не указано)`;
+        const phoneLine = clientPhone.trim() ? `📞 Телефон: ${clientPhone.trim()}` : `📞 Телефон: (не указан)`;
+
+        lines.push("Здравствуйте! Хочу оформить заказ:");
+        lines.push("");
+        lines.push(nameLine);
+        lines.push(phoneLine);
+        lines.push("");
+
+        if (!cartItems.length){
+          lines.push("Корзина пуста.");
+          return lines.join("\n");
+        }
+
+        cartItems.forEach((it, idx) => {
+          const sum = it.priceValue * it.quantity;
+          lines.push(`${idx+1}. ${it.name} — ${getWeightLabel(it.weightType)} — ${it.priceStr} × ${it.quantity} = ${formatMoney(sum)}`);
+          if (it.note) lines.push(`   📝 ${it.note}`);
+        });
+
+        lines.push("");
+        lines.push(`ИТОГО: ${formatMoney(totalPrice)}`);
+        return lines.join("\n");
+      }, [cartItems, totalPrice, clientName, clientPhone]);
+
+      const openTelegram = () => {
+        const username = (TELEGRAM_USERNAME || "").replace(/^@/, "").trim();
+        if (!username){
+          alert("Укажи TELEGRAM_USERNAME в коде (без @).");
+          return;
+        }
+        // Небольшая валидация перед отправкой
+        if (!clientName.trim() || !clientPhone.trim()){
+          const ok = confirm("Имя или телефон не заполнены. Отправить заказ всё равно?");
+          if (!ok) return;
+        }
+        const url = `https://t.me/${encodeURIComponent(username)}?text=${encodeURIComponent(orderText)}`;
+        window.open(url, "_blank", "noopener,noreferrer");
+      };
+
+      return (
+        <div>
+          <header>
+            <div className="container header-top">
+              <div className="row">
+                <div className="brand">
+                  <b>ROYAL MARKET — Прайс</b>
+                  <span>Поиск по товарам · цены за 1 кг / 500 г / 250 г (где указано)</span>
+                </div>
+
+                <div className="controls">
+                  <div className="search">
+                    <span>🔎</span>
+                    <input
+                      value={searchQuery}
+                      onChange={(e)=>setSearchQuery(e.target.value)}
+                      placeholder="Например: кешью, манго, кунжут…"
+                    />
+                  </div>
+
+                  <div className="pill">
+                    <span>Вес:</span>
+                    <select value={weightFilter} onChange={(e)=>setWeightFilter(e.target.value)}>
+                      <option value="all">Все</option>
+                      <option value="kg">1 кг</option>
+                      <option value="g500">500 г</option>
+                      <option value="g250">250 г</option>
+                      <option value="pack">Фасовка</option>
+                    </select>
+                  </div>
+
+                  <button className="btn cart-btn" onClick={()=>setCartOpen(true)} aria-label="Корзина">
+                    <span>🛒</span>
+                    {totalItems > 0 && <span className="badge">{totalItems}</span>}
+                  </button>
+
+                  <button className="btn btn-dark" onClick={()=>window.print()}>
+                    Печать / PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="container chips">
+              {categories.map(cat => (
+                <span
+                  key={cat}
+                  className={"chip" + (activeCategory === cat ? " active" : "")}
+                  onClick={()=>{
+                    setActiveCategory(cat);
+                    window.scrollTo({top:0, behavior:"smooth"});
+                  }}
+                >
+                  {cat}
+                </span>
+              ))}
+            </div>
+          </header>
+
+          <main className="container">
+            {filteredBlocks.length === 0 ? (
+              <div style={{color:"var(--muted)", padding:"14px 0"}}>
+                Ничего не найдено. Попробуй другое слово или выбери «Все».
+              </div>
+            ) : (
+              filteredBlocks.map(block => (
+                <section className="section" key={block.cat}>
+                  <h2>
+                    <span>{block.cat}</span>
+                    <small>{block.items.length} поз.</small>
+                  </h2>
+
+                  <div style={{overflowX:"auto"}}>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Товар</th>
+                          {showCol("kg") && <th className="right">1 кг</th>}
+                          {showCol("g500") && <th className="right">500 г</th>}
+                          {showCol("g250") && <th className="right">250 г</th>}
+                          {showCol("pack") && <th>Фасовка / цена</th>}
+                          <th>Примечание</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {block.items.map((item, idx) => (
+                          <tr key={idx}>
+                            <td>
+                              <div className="name">{item.name}</div>
+                            </td>
+
+                            {showCol("kg") && (
+                              <td className="mono td-price" data-label="1 кг">
+                                <div className="pricecell">
+                                  <span>{item.kg || "—"}</span>
+                                  {item.kg && item.kg !== "—" && (
+                                    <button className="add-btn" onClick={()=>addToCart(item, "kg", item.kg)} title="Добавить">➕</button>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+
+                            {showCol("g500") && (
+                              <td className="mono td-price" data-label="500 г">
+                                <div className="pricecell">
+                                  <span>{item.g500 || "—"}</span>
+                                  {item.g500 && item.g500 !== "—" && (
+                                    <button className="add-btn" onClick={()=>addToCart(item, "g500", item.g500)} title="Добавить">➕</button>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+
+                            {showCol("g250") && (
+                              <td className="mono td-price" data-label="250 г">
+                                <div className="pricecell">
+                                  <span>{item.g250 || "—"}</span>
+                                  {item.g250 && item.g250 !== "—" && (
+                                    <button className="add-btn" onClick={()=>addToCart(item, "g250", item.g250)} title="Добавить">➕</button>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+
+                            {showCol("pack") && (
+                              <td className="td-price" data-label="Фасовка">
+                                <div className="pricecell">
+                                  <span>{item.pack || "—"}</span>
+                                  {item.pack && item.pack !== "—" && (
+                                    <button className="add-btn" onClick={()=>addToCart(item, "pack", item.pack)} title="Добавить">➕</button>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+
+                            <td className="muted td-note" style={{fontSize:"12px"}}>
+                              {item.note || "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+
+                    </table>
+                  </div>
+                </section>
+              ))
+            )}
+          </main>
+
+          {/* Cart */}
+          <div className={"backdrop" + (cartOpen ? " open" : "")} onClick={()=>setCartOpen(false)} />
+          <aside className={"cart" + (cartOpen ? " open" : "")} aria-label="Корзина">
+            <div className="cart-head">
+              <h3>Ваша корзина</h3>
+              <button className="xbtn" onClick={()=>setCartOpen(false)} aria-label="Закрыть">&times;</button>
+            </div>
+
+            {cartItems.length === 0 ? (
+              <div className="cart-body" style={{display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center"}}>
+                <div style={{fontSize:"56px", marginBottom:"8px"}}>🛒</div>
+                <div style={{fontSize:"18px", fontWeight:700, marginBottom:"6px"}}>Корзина пуста</div>
+                <div className="muted" style={{marginBottom:"14px"}}>Добавьте товары из прайс-листа</div>
+                <button className="btn btn-dark" onClick={()=>setCartOpen(false)}>Вернуться к покупкам</button>
+              </div>
+            ) : (
+              <>
+                <div className="cart-body">
+                  {/* ✅ Форма клиента */}
+                  <div className="form">
+                    <h4>Данные для заказа</h4>
+
+                    <div className="field">
+                      <label>Имя</label>
+                      <input
+                        value={clientName}
+                        onChange={(e)=>setClientName(e.target.value)}
+                        placeholder="Например: Дмитрий"
+                        autoComplete="name"
+                      />
+                    </div>
+
+                    <div className="field" style={{marginBottom:0}}>
+                      <label>Телефон</label>
+                      <input
+                        value={clientPhone}
+                        onChange={(e)=>setClientPhone(e.target.value)}
+                        placeholder="+375 29 123-45-67"
+                        autoComplete="tel"
+                      />
+                      <div className="hint">Эти данные автоматически добавятся в сообщение Telegram.</div>
+                    </div>
+                  </div>
+
+                  {cartItems.map(it => (
+                    <div className="item" key={it.id}>
+                      <div className="item-top">
+                        <div>
+                          <div style={{fontWeight:700}}>{it.name}</div>
+                          <div className="muted" style={{fontSize:"13px"}}>{getWeightLabel(it.weightType)}</div>
+                          {it.note && <div className="muted" style={{fontSize:"12px", marginTop:"6px"}}>{it.note}</div>}
+                        </div>
+                      </div>
+
+                      <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px"}}>
+                        <div className="qty">
+                          <button onClick={()=>updateQuantity(it.id, it.quantity - 1)} aria-label="Минус">−</button>
+                          <span>{it.quantity}</span>
+                          <button onClick={()=>updateQuantity(it.id, it.quantity + 1)} aria-label="Плюс">+</button>
+                        </div>
+
+                        <div style={{textAlign:"right"}}>
+                          <div className="muted" style={{fontSize:"13px"}}>{it.priceStr} × {it.quantity}</div>
+                          <div style={{fontWeight:800}}>{formatMoney(it.priceValue * it.quantity)}</div>
+                        </div>
+                      </div>
+
+                      <button className="trash" onClick={()=>removeFromCart(it.id)}>
+                        <span>🗑️</span> Удалить
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="cart-foot">
+                  <div className="totals">
+                    <span>Итого:</span>
+                    <b>{formatMoney(totalPrice)}</b>
+                  </div>
+
+                  <div className="stack">
+                    <button className="btn btn-dark" onClick={openTelegram} title={`Открыть чат с @${TELEGRAM_USERNAME} и отправить заказ`}>
+                      ✈️ Отправить заказ в Telegram
+                    </button>
+
+                    <div className="two">
+                      <button className="btn" onClick={clearCart}>Очистить корзину</button>
+                      <button className="btn" onClick={()=>{
+                        alert(`Заказ сформирован на сумму ${formatMoney(totalPrice)}.\n\nНажмите "Отправить заказ в Telegram", чтобы написать менеджеру.`);
+                      }}>
+                        Оформить заказ
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="footer-note">
+                    Товары можно забрать по адресу: ул. Торговая, 15<br/>
+                    Режим работы: Пн-Вс 9:00-21:00
+                  </div>
+                </div>
+              </>
+            )}
+          </aside>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
