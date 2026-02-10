@@ -24,7 +24,6 @@
       --shadow: 0 10px 30px rgba(0,0,0,0.06);
       --radius: 16px;
 
-      /* ✅ (3) кружок зелёный */
       --green:#22c55e;
     }
     *{box-sizing:border-box}
@@ -65,7 +64,6 @@
     .badge{
       position:absolute;top:-6px;right:-6px;
       width:20px;height:20px;border-radius:999px;
-      /* ✅ (3) кружок зелёный */
       background: var(--green);
       color:#fff;
       font-size:12px;display:flex;align-items:center;justify-content:center;
@@ -259,7 +257,7 @@
       margin-top:10px;
     }
 
-    /* ✅ Toast */
+    /* Toast */
     .toastwrap{
       overflow:hidden;
       max-height:0;
@@ -284,15 +282,12 @@
       display:flex;
       gap:10px;
       align-items:flex-start;
-
-      /* ✅ (2) убираем "острые серые тени" на скруглениях (артефакты blur+shadow) */
       background-clip: padding-box;
       -webkit-mask-image: -webkit-radial-gradient(white, black);
       mask-image: radial-gradient(white, black);
     }
     .toast .dot{
       width:10px;height:10px;border-radius:99px;
-      /* ✅ (3) кружок зелёный */
       background: var(--green);
       margin-top:4px;
       flex:0 0 auto;
@@ -478,7 +473,6 @@
 
     function App(){
       const [activeCategory, setActiveCategory] = useState("Все");
-
       const [cartOpen, setCartOpen] = useState(false);
       const [cartItems, setCartItems] = useState([]);
 
@@ -494,7 +488,6 @@
 
       useEffect(() => {
         if (!noticeOpen) return;
-        /* ✅ (1) всплывающие окна на 3с дольше (было 2600) -> 5600 */
         const t = setTimeout(() => setNoticeOpen(false), 5600);
         return () => clearTimeout(t);
       }, [noticeOpen, notice]);
@@ -556,17 +549,13 @@
       const removeFromCart = (id) => setCartItems(cartItems.filter(it => it.id !== id));
       const clearCart = () => setCartItems([]);
 
+      /* ✅ КОРОЧЕ: без примечаний, без "= сумма" в каждой строке */
       const orderText = useMemo(() => {
         const lines = [];
-        const nameLine = clientName.trim() ? `👤 Имя: ${clientName.trim()}` : `👤 Имя: (не указано)`;
-        const phoneLine = clientPhone.trim() ? `📞 Телефон: ${clientPhone.trim()}` : `📞 Телефон: (не указан)`;
-        const addrLine = clientAddress.trim() ? `📍 Адрес доставки: ${clientAddress.trim()}` : `📍 Адрес доставки: (не указан)`;
-
-        lines.push("Здравствуйте! Хочу оформить заказ:");
-        lines.push("");
-        lines.push(nameLine);
-        lines.push(phoneLine);
-        lines.push(addrLine);
+        lines.push("Заказ:");
+        lines.push(`👤 ${clientName.trim() || "(имя не указано)"}`);
+        lines.push(`📞 ${clientPhone.trim() || "(телефон не указан)"}`);
+        lines.push(`📍 ${clientAddress.trim() || "(адрес не указан)"}`);
         lines.push("");
 
         if (!cartItems.length){
@@ -575,15 +564,38 @@
         }
 
         cartItems.forEach((it, idx) => {
-          const sum = it.priceValue * it.quantity;
-          lines.push(`${idx+1}. ${it.name} — ${getWeightLabel(it.weightType)} — ${it.priceStr} × ${it.quantity} = ${formatMoney(sum)}`);
-          if (it.note) lines.push(`   📝 ${it.note}`);
+          lines.push(`${idx+1}. ${it.name} — ${getWeightLabel(it.weightType)} × ${it.quantity}`);
         });
 
         lines.push("");
         lines.push(`ИТОГО: ${formatMoney(totalPrice)}`);
         return lines.join("\n");
       }, [cartItems, totalPrice, clientName, clientPhone, clientAddress]);
+
+      /* ✅ tg:// + fallback на https://t.me */
+      const openTelegramSmart = (username, text) => {
+        const safeUser = encodeURIComponent(username);
+        const safeText = encodeURIComponent(text);
+
+        const deepLink = `tg://resolve?domain=${safeUser}&text=${safeText}`;
+        const webLink  = `https://t.me/${safeUser}?text=${safeText}`;
+
+        // 1) пытаемся открыть Telegram app (не уводим страницу)
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = deepLink;
+        document.body.appendChild(iframe);
+
+        // 2) fallback: если Telegram не открылся — откроем webLink
+        setTimeout(() => {
+          try { document.body.removeChild(iframe); } catch(e){}
+
+          // если страница всё ещё видима — значит приложение не перехватило ссылку
+          if (document.visibilityState === "visible") {
+            window.open(webLink, "_blank", "noopener,noreferrer");
+          }
+        }, 900);
+      };
 
       const openTelegram = () => {
         const username = (TELEGRAM_USERNAME || "").replace(/^@/, "").trim();
@@ -602,8 +614,7 @@
         }
 
         hideNotice();
-        const url = `https://t.me/${encodeURIComponent(username)}?text=${encodeURIComponent(orderText)}`;
-        window.open(url, "_blank", "noopener,noreferrer");
+        openTelegramSmart(username, orderText);
       };
 
       return (
