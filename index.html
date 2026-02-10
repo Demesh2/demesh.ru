@@ -267,7 +267,7 @@
       margin-bottom:0;
     }
     .toastwrap.show{
-      max-height:120px;
+      max-height:160px;
       opacity:1;
       transform: translateY(0);
       margin-bottom:10px;
@@ -572,7 +572,7 @@
         return lines.join("\n");
       }, [cartItems, totalPrice, clientName, clientPhone, clientAddress]);
 
-      /* ✅ tg:// + fallback на https://t.me */
+      /* ✅ tg:// + https fallback + (дополнительно) кнопка "Открыть в приложении" если не подставился текст */
       const openTelegramSmart = (username, text) => {
         const safeUser = encodeURIComponent(username);
         const safeText = encodeURIComponent(text);
@@ -580,21 +580,35 @@
         const deepLink = `tg://resolve?domain=${safeUser}&text=${safeText}`;
         const webLink  = `https://t.me/${safeUser}?text=${safeText}`;
 
-        // 1) пытаемся открыть Telegram app (не уводим страницу)
+        // 1) пытаемся открыть Telegram app (через iframe — не ломает текущую страницу)
         const iframe = document.createElement("iframe");
         iframe.style.display = "none";
         iframe.src = deepLink;
         document.body.appendChild(iframe);
 
-        // 2) fallback: если Telegram не открылся — откроем webLink
+        // 2) fallback на webLink
         setTimeout(() => {
           try { document.body.removeChild(iframe); } catch(e){}
-
-          // если страница всё ещё видима — значит приложение не перехватило ссылку
           if (document.visibilityState === "visible") {
             window.open(webLink, "_blank", "noopener,noreferrer");
           }
         }, 900);
+
+        // 3) резерв: если у человека открылся web, покажем подсказку "Открыть в приложении"
+        // (это помогает, когда web не переносит текст в app)
+        showNotice("Если открылось в браузере и текст не подставился — нажмите «Открыть в Telegram» ниже.");
+        setTimeout(() => {
+          if (document.visibilityState === "visible") {
+            window.__rm_open_tg_deeplink = () => {
+              const a = document.createElement("a");
+              a.href = deepLink;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            };
+            // ничего в UI не добавляем — только действие по кнопке ниже
+          }
+        }, 950);
       };
 
       const openTelegram = () => {
@@ -813,7 +827,23 @@
                   <div className={"toastwrap" + (noticeOpen && notice ? " show" : "")} aria-live="polite">
                     <div className="toast">
                       <span className="dot" />
-                      <div className="ttext">{notice}</div>
+                      <div className="ttext">
+                        {notice}
+                        {/* ✅ ДОБАВЛЕНО: резервная кнопка "Открыть в Telegram" (только когда нужно) */}
+                        {typeof window !== "undefined" && window.__rm_open_tg_deeplink && (
+                          <div style={{marginTop:"8px"}}>
+                            <button
+                              className="btn btn-dark"
+                              style={{padding:"8px 12px"}}
+                              onClick={()=>{
+                                try{ window.__rm_open_tg_deeplink(); }catch(e){}
+                              }}
+                            >
+                              Открыть в Telegram
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       <button className="tbtn" onClick={hideNotice} aria-label="Закрыть уведомление">×</button>
                     </div>
                   </div>
