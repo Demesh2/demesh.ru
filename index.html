@@ -28,12 +28,12 @@
       /* ✅ (3) кружок зелёный */
       --green:#22c55e;
 
-      /* ✅ FIX: динамическая высота видимой области (клавиатура / mini app) */
+      /* ✅ FIX: высота приложения (будем ставить stableHeight, чтобы низ НЕ поднимался при клавиатуре) */
       --app-height: 100%;
     }
     *{box-sizing:border-box}
 
-    /* ✅ FIX: не даём странице разъезжаться по X и используем реальную высоту */
+    /* ✅ FIX: не даём странице разъезжаться по X и используем высоту приложения */
     html, body{
       height: var(--app-height);
       min-height: var(--app-height);
@@ -197,7 +197,7 @@
       transition: transform .25s ease;
       display:flex;flex-direction:column;
 
-      /* ✅ FIX: высота корзины = реальная видимая область (клавиатура) */
+      /* ✅ FIX: корзина по высоте приложения (stableHeight => низ не подпрыгивает) */
       height: var(--app-height);
     }
     .cart.open{transform: translateX(0)}
@@ -339,34 +339,24 @@
 <body>
   <div id="root"></div>
 
-  <!-- ✅ FIX: Telegram Mini App корректная высота при клавиатуре (iOS/Android) -->
+  <!-- ✅ FIX: Telegram Mini App — стабильная высота (низ НЕ поднимается при клавиатуре) -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     (function () {
       const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
-      function computeHeight() {
-        const vv = window.visualViewport;
-        const vvH = vv ? Math.round(vv.height) : 0;
-        const tgH = tg && tg.viewportHeight ? Math.round(tg.viewportHeight) : 0;
-        const wH  = window.innerHeight ? Math.round(window.innerHeight) : 0;
-
-        // берём самую "видимую" высоту (обычно минимальную при открытой клавиатуре)
-        const h = Math.max(1, Math.min(
-          vvH || Infinity,
-          tgH || Infinity,
-          wH  || Infinity
-        ));
-
+      function setStableHeight() {
+        // ✅ stableHeight НЕ меняется при клавиатуре -> низ не "подпрыгивает"
+        const stable = tg && tg.viewportStableHeight ? Math.round(tg.viewportStableHeight) : 0;
+        const h = stable || Math.round(window.innerHeight || 0) || 1;
         document.documentElement.style.setProperty('--app-height', h + 'px');
       }
 
       if (tg && tg.expand) tg.expand();
 
-      computeHeight();
-      if (tg && tg.onEvent) tg.onEvent('viewportChanged', computeHeight);
-      window.addEventListener('resize', computeHeight);
-      if (window.visualViewport) window.visualViewport.addEventListener('resize', computeHeight);
+      setStableHeight();
+      if (tg && tg.onEvent) tg.onEvent('viewportChanged', setStableHeight);
+      window.addEventListener('resize', setStableHeight);
     })();
   </script>
 
