@@ -2,14 +2,11 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <!-- ✅ FIX: корректный viewport для iOS/Android + safe-area -->
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <title>ROYAL MARKET — Прайс</title>
 
-  <!-- React (CDN, без сборки) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- Babel чтобы писать JSX прямо в одном HTML -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
@@ -24,23 +21,20 @@
       --dark2:#25211d;
       --shadow: 0 10px 30px rgba(0,0,0,0.06);
       --radius: 16px;
-
-      /* ✅ (3) кружок зелёный */
       --green:#22c55e;
 
-      /* ✅ FIX: динамическая высота видимой области (клавиатура / mini app) */
+      /* ✅ базовая высота приложения (НЕ уменьшаем при клавиатуре) */
       --app-height: 100%;
-
-      /* ✅ FIX: смещение низа под клавиатуру (для Telegram Mini App) */
+      /* ✅ смещение низа под клавиатуру */
       --kb-offset: 0px;
     }
     *{box-sizing:border-box}
 
-    /* ✅ FIX: не даём странице разъезжаться по X и используем реальную высоту */
     html, body{
       height: var(--app-height);
       min-height: var(--app-height);
       overflow-x: hidden;
+      background: var(--bg);
     }
 
     body{
@@ -50,7 +44,6 @@
       color:var(--text);
     }
 
-    /* ✅ FIX: на всякий случай не даём инпутам расширять страницу */
     input, textarea{ max-width:100%; }
 
     .container{max-width:1100px;margin:0 auto;padding:0 16px;}
@@ -84,7 +77,6 @@
     .badge{
       position:absolute;top:-6px;right:-6px;
       width:20px;height:20px;border-radius:999px;
-      /* ✅ (3) кружок зелёный */
       background: var(--green);
       color:#fff;
       font-size:12px;display:flex;align-items:center;justify-content:center;
@@ -157,7 +149,6 @@
     .add-btn:active{transform: translateY(1px)}
     .add-btn:hover{opacity:.75}
 
-    /* Mobile table -> cards */
     @media (max-width: 720px){
       thead{display:none}
       table, tbody, tr, td{display:block;width:100%}
@@ -183,7 +174,6 @@
       }
     }
 
-    /* Cart */
     .backdrop{
       position:fixed;inset:0;z-index:40;
       background: rgba(0,0,0,0.4);
@@ -191,6 +181,7 @@
       transition: opacity .25s ease;
     }
     .backdrop.open{opacity:1;pointer-events:auto}
+
     .cart{
       position:fixed;top:0;right:0;height:100%;
       width:100%;max-width:420px;
@@ -200,11 +191,9 @@
       transition: transform .25s ease;
       display:flex;flex-direction:column;
 
-      /* ✅ FIX: высота корзины = реальная видимая область */
       height: var(--app-height);
-
-      /* ✅ FIX: чтобы .cart-foot, уехавший вниз, был "под клавиатурой" (не виден) */
       overflow: hidden;
+      overscroll-behavior: contain;
     }
     .cart.open{transform: translateX(0)}
     .cart-head{
@@ -219,19 +208,17 @@
       font-size:28px;cursor:pointer;line-height:1;
       padding:4px 8px;
     }
-    .cart-body{padding:14px 16px;overflow:auto;flex:1}
+    .cart-body{padding:14px 16px;overflow:auto;flex:1;-webkit-overflow-scrolling:touch}
     .cart-foot{
       padding:14px 16px;
       border-top:1px solid var(--border);
       background: var(--bg);
 
-      /* ✅ FIX: уводим низ под клавиатуру в Telegram Mini App */
       transform: translateY(var(--kb-offset));
       will-change: transform;
-
-      /* ✅ важно: без анимации, чтобы не "выезжало" обратно */
       transition: none;
     }
+
     .item{
       padding:12px 0;
       border-bottom:1px solid var(--border);
@@ -266,7 +253,6 @@
     .two{display:flex;gap:10px}
     .two > *{flex:1}
 
-    /* Form in cart */
     .form{
       border:1px solid var(--border);
       background:#fff;
@@ -291,7 +277,6 @@
       margin-top:10px;
     }
 
-    /* ✅ Toast */
     .toastwrap{
       overflow:hidden;
       max-height:0;
@@ -316,15 +301,12 @@
       display:flex;
       gap:10px;
       align-items:flex-start;
-
-      /* ✅ (2) убираем "острые серые тени" на скруглениях (артефакты blur+shadow) */
       background-clip: padding-box;
       -webkit-mask-image: -webkit-radial-gradient(white, black);
       mask-image: radial-gradient(white, black);
     }
     .toast .dot{
       width:10px;height:10px;border-radius:99px;
-      /* ✅ (3) кружок зелёный */
       background: var(--green);
       margin-top:4px;
       flex:0 0 auto;
@@ -346,92 +328,71 @@
       flex:0 0 auto;
     }
     .toast .tbtn:hover{color: var(--dark)}
-
-    /* ✅ ЖЁСТКИЙ FIX: при открытой клавиатуре в Telegram Mini App
-       полностью скрываем нижнюю панель */
-    html.kb-open .cart-foot{
-      display:none !important;
-    }
-    html.kb-open .cart-body{
-      padding-bottom:16px;
-    }
   </style>
 </head>
 
 <body>
   <div id="root"></div>
 
-  <!-- ✅ FIX: Telegram Mini App корректная высота при клавиатуре (iOS/Android) -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
-  (function () {
-    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    (function () {
+      const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
-    let baseHeight = 0;
-    let forceKb = false;
+      // ✅ ЖЁСТКИЙ фикс: app-height всегда = максимальная (стабильная) высота,
+      // чтобы при закрытии клавиатуры не появлялся "серый квадрат" (пустое место)
+      let baseHeight = 0;
+      let raf = 0;
 
-    function setKbOpen(isOpen){
-      document.documentElement.classList.toggle('kb-open', !!isOpen);
-    }
+      function measureOnce() {
+        const vv = window.visualViewport;
+        const vvH = vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
+        const vvTop = vv ? Math.round(vv.offsetTop || 0) : 0;
 
-    function compute() {
-      const vv = window.visualViewport;
+        const visibleBottom = vvH + vvTop;
 
-      const vvH = vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
-      const vvTop = vv ? Math.round(vv.offsetTop || 0) : 0;
-      const visibleBottom = vvH + vvTop;
+        const tgStable = (tg && tg.viewportStableHeight) ? Math.round(tg.viewportStableHeight) : 0;
+        const tgH = (tg && tg.viewportHeight) ? Math.round(tg.viewportHeight) : 0;
+        const wH = Math.round(window.innerHeight || 0);
 
-      const tgStable = (tg && tg.viewportStableHeight) ? Math.round(tg.viewportStableHeight) : 0;
-      const tgH = (tg && tg.viewportHeight) ? Math.round(tg.viewportHeight) : 0;
-      const wH = Math.round(window.innerHeight || 0);
+        // кандидат на "полную" высоту без клавиатуры — берём максимум и НЕ уменьшаем
+        const candidate = Math.max(tgStable, tgH, wH, visibleBottom);
+        if (candidate > baseHeight) baseHeight = candidate;
 
-      const candidate = Math.max(tgStable, tgH, wH, visibleBottom);
-      if (candidate > baseHeight) baseHeight = candidate;
+        // ✅ app-height теперь = baseHeight (а не vvH), чтобы не было пустого места
+        document.documentElement.style.setProperty('--app-height', baseHeight + 'px');
 
-      // 1) высота приложения = видимая (чтобы контент/скролл влезал)
-      document.documentElement.style.setProperty('--app-height', vvH + 'px');
-
-      // 2) вычисляем "съеденную" область
-      const kb = Math.max(0, baseHeight - visibleBottom);
-
-      // 3) считаем, что клавиатура открыта, если:
-      //    - фокус в поле + kb > 0
-      //    - или kb > 60px (жёсткий порог)
-      //    - или мы форсим на короткий момент при focusin
-      const ae = document.activeElement;
-      const isField = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
-      const kbOpen = forceKb || (isField && kb > 0) || (kb > 60);
-
-      setKbOpen(kbOpen);
-    }
-
-    if (tg && tg.expand) tg.expand();
-
-    compute();
-    if (tg && tg.onEvent) tg.onEvent('viewportChanged', compute);
-
-    window.addEventListener('resize', compute);
-    window.addEventListener('orientationchange', compute);
-
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', compute);
-      window.visualViewport.addEventListener('scroll', compute);
-    }
-
-    document.addEventListener('focusin', (e) => {
-      const t = e.target;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
-        // Жёстко скрываем низ сразу, пока Telegram "пляшет" 100-200мс
-        forceKb = true;
-        setKbOpen(true);
-        setTimeout(() => { forceKb = false; compute(); }, 80);
+        // ✅ kb-offset = сколько съела клавиатура (или 0)
+        const kb = Math.max(0, baseHeight - visibleBottom);
+        document.documentElement.style.setProperty('--kb-offset', kb + 'px');
       }
-    });
 
-    document.addEventListener('focusout', () => {
-      setTimeout(() => { forceKb = false; compute(); }, 120);
-    });
-  })();
+      function compute() {
+        if (raf) cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => {
+          measureOnce();
+          // ✅ добиваем телеграм-лаг: ещё пару пересчётов после анимации клавиатуры
+          setTimeout(measureOnce, 50);
+          setTimeout(measureOnce, 150);
+        });
+      }
+
+      if (tg && tg.expand) tg.expand();
+
+      compute();
+      if (tg && tg.onEvent) tg.onEvent('viewportChanged', compute);
+
+      window.addEventListener('resize', compute);
+      window.addEventListener('orientationchange', compute);
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', compute);
+        window.visualViewport.addEventListener('scroll', compute);
+      }
+
+      document.addEventListener('focusin', compute);
+      document.addEventListener('focusout', compute);
+    })();
   </script>
 
   <script type="text/babel">
@@ -916,7 +877,7 @@
                     <div className="toast">
                       <span className="dot" />
                       <div className="ttext">{notice}</div>
-                      <button className="tbtn" onClick={hideNotice} aria-label="Закрыть уведомление">×</button>
+                      <button className="tbtn" onClick={()=>setNoticeOpen(false)} aria-label="Закрыть уведомление">×</button>
                     </div>
                   </div>
 
@@ -933,7 +894,7 @@
                     <div className="two">
                       <button className="btn" onClick={()=>{
                         clearCart();
-                        hideNotice();
+                        setNoticeOpen(false);
                       }}>
                         Очистить корзину
                       </button>
