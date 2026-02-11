@@ -28,12 +28,12 @@
       /* ✅ (3) кружок зелёный */
       --green:#22c55e;
 
-      /* ✅ FIX: высота приложения (будем ставить stableHeight, чтобы низ НЕ поднимался при клавиатуре) */
+      /* ✅ FIX: высота приложения (стабильная, НЕ уменьшается от клавиатуры в TG) */
       --app-height: 100%;
     }
     *{box-sizing:border-box}
 
-    /* ✅ FIX: не даём странице разъезжаться по X и используем высоту приложения */
+    /* ✅ FIX: не даём странице разъезжаться по X и используем реальную высоту */
     html, body{
       height: var(--app-height);
       min-height: var(--app-height);
@@ -197,7 +197,7 @@
       transition: transform .25s ease;
       display:flex;flex-direction:column;
 
-      /* ✅ FIX: корзина по высоте приложения (stableHeight => низ не подпрыгивает) */
+      /* ✅ FIX: высота корзины = СТАБИЛЬНАЯ высота, НЕ уменьшается от клавиатуры в TG */
       height: var(--app-height);
     }
     .cart.open{transform: translateX(0)}
@@ -339,24 +339,38 @@
 <body>
   <div id="root"></div>
 
-  <!-- ✅ FIX: Telegram Mini App — стабильная высота (низ НЕ поднимается при клавиатуре) -->
+  <!-- ✅ FIX: Telegram Mini App корректная высота при клавиатуре (iOS/Android) -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     (function () {
       const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
-      function setStableHeight() {
-        // ✅ stableHeight НЕ меняется при клавиатуре -> низ не "подпрыгивает"
-        const stable = tg && tg.viewportStableHeight ? Math.round(tg.viewportStableHeight) : 0;
-        const h = stable || Math.round(window.innerHeight || 0) || 1;
-        document.documentElement.style.setProperty('--app-height', h + 'px');
+      // ✅ Держим "стабильную" высоту (чтобы низ НЕ поднимался при клавиатуре)
+      let maxSeen = 0;
+
+      function computeHeight() {
+        const vv = window.visualViewport;
+        const vvH = vv ? Math.round(vv.height) : 0;
+        const tgH = tg && tg.viewportHeight ? Math.round(tg.viewportHeight) : 0;
+        const wH  = window.innerHeight ? Math.round(window.innerHeight) : 0;
+
+        const current = Math.max(1, (tgH || vvH || wH || 1));
+        maxSeen = Math.max(maxSeen, current);
+
+        // ✅ Главное: используем viewportStableHeight (если есть), иначе maxSeen
+        const stable = (tg && tg.viewportStableHeight)
+          ? Math.max(1, Math.round(tg.viewportStableHeight))
+          : maxSeen;
+
+        document.documentElement.style.setProperty('--app-height', stable + 'px');
       }
 
       if (tg && tg.expand) tg.expand();
 
-      setStableHeight();
-      if (tg && tg.onEvent) tg.onEvent('viewportChanged', setStableHeight);
-      window.addEventListener('resize', setStableHeight);
+      computeHeight();
+      if (tg && tg.onEvent) tg.onEvent('viewportChanged', computeHeight);
+      window.addEventListener('resize', computeHeight);
+      if (window.visualViewport) window.visualViewport.addEventListener('resize', computeHeight);
     })();
   </script>
 
@@ -534,7 +548,6 @@
 
       useEffect(() => {
         if (!noticeOpen) return;
-        /* ✅ (1) всплывающие окна на 3с дольше (было 2600) -> 5600 */
         const t = setTimeout(() => setNoticeOpen(false), 5600);
         return () => clearTimeout(t);
       }, [noticeOpen, notice]);
