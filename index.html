@@ -24,6 +24,7 @@
       --shadow: 0 10px 30px rgba(0,0,0,0.06);
       --radius: 16px;
 
+      /* ✅ (3) кружок зелёный */
       --green:#22c55e;
     }
     *{box-sizing:border-box}
@@ -64,6 +65,7 @@
     .badge{
       position:absolute;top:-6px;right:-6px;
       width:20px;height:20px;border-radius:999px;
+      /* ✅ (3) кружок зелёный */
       background: var(--green);
       color:#fff;
       font-size:12px;display:flex;align-items:center;justify-content:center;
@@ -257,7 +259,7 @@
       margin-top:10px;
     }
 
-    /* Toast */
+    /* ✅ Toast */
     .toastwrap{
       overflow:hidden;
       max-height:0;
@@ -267,7 +269,7 @@
       margin-bottom:0;
     }
     .toastwrap.show{
-      max-height:160px;
+      max-height:120px;
       opacity:1;
       transform: translateY(0);
       margin-bottom:10px;
@@ -282,12 +284,15 @@
       display:flex;
       gap:10px;
       align-items:flex-start;
+
+      /* ✅ (2) убираем "острые серые тени" на скруглениях (артефакты blur+shadow) */
       background-clip: padding-box;
       -webkit-mask-image: -webkit-radial-gradient(white, black);
       mask-image: radial-gradient(white, black);
     }
     .toast .dot{
       width:10px;height:10px;border-radius:99px;
+      /* ✅ (3) кружок зелёный */
       background: var(--green);
       margin-top:4px;
       flex:0 0 auto;
@@ -318,7 +323,7 @@
   <script type="text/babel">
     const { useEffect, useMemo, useState } = React;
 
-    const TELEGRAM_USERNAME = "OrEx_zakaz"; // <-- поменяй (без @)
+    const TELEGRAM_USERNAME = "username"; // <-- поменяй (без @)
 
     const data = [
       {
@@ -473,6 +478,7 @@
 
     function App(){
       const [activeCategory, setActiveCategory] = useState("Все");
+
       const [cartOpen, setCartOpen] = useState(false);
       const [cartItems, setCartItems] = useState([]);
 
@@ -488,6 +494,7 @@
 
       useEffect(() => {
         if (!noticeOpen) return;
+        /* ✅ (1) всплывающие окна на 3с дольше (было 2600) -> 5600 */
         const t = setTimeout(() => setNoticeOpen(false), 5600);
         return () => clearTimeout(t);
       }, [noticeOpen, notice]);
@@ -549,13 +556,17 @@
       const removeFromCart = (id) => setCartItems(cartItems.filter(it => it.id !== id));
       const clearCart = () => setCartItems([]);
 
-      /* ✅ КОРОЧЕ: без примечаний, без "= сумма" в каждой строке */
       const orderText = useMemo(() => {
         const lines = [];
-        lines.push("Заказ:");
-        lines.push(`👤 ${clientName.trim() || "(имя не указано)"}`);
-        lines.push(`📞 ${clientPhone.trim() || "(телефон не указан)"}`);
-        lines.push(`📍 ${clientAddress.trim() || "(адрес не указан)"}`);
+        const nameLine = clientName.trim() ? `👤 Имя: ${clientName.trim()}` : `👤 Имя: (не указано)`;
+        const phoneLine = clientPhone.trim() ? `📞 Телефон: ${clientPhone.trim()}` : `📞 Телефон: (не указан)`;
+        const addrLine = clientAddress.trim() ? `📍 Адрес доставки: ${clientAddress.trim()}` : `📍 Адрес доставки: (не указан)`;
+
+        lines.push("Здравствуйте! Хочу оформить заказ:");
+        lines.push("");
+        lines.push(nameLine);
+        lines.push(phoneLine);
+        lines.push(addrLine);
         lines.push("");
 
         if (!cartItems.length){
@@ -564,52 +575,15 @@
         }
 
         cartItems.forEach((it, idx) => {
-          lines.push(`${idx+1}. ${it.name} — ${getWeightLabel(it.weightType)} × ${it.quantity}`);
+          const sum = it.priceValue * it.quantity;
+          lines.push(`${idx+1}. ${it.name} — ${getWeightLabel(it.weightType)} — ${it.priceStr} × ${it.quantity} = ${formatMoney(sum)}`);
+          if (it.note) lines.push(`   📝 ${it.note}`);
         });
 
         lines.push("");
         lines.push(`ИТОГО: ${formatMoney(totalPrice)}`);
         return lines.join("\n");
       }, [cartItems, totalPrice, clientName, clientPhone, clientAddress]);
-
-      /* ✅ tg:// + https fallback + (дополнительно) кнопка "Открыть в приложении" если не подставился текст */
-      const openTelegramSmart = (username, text) => {
-        const safeUser = encodeURIComponent(username);
-        const safeText = encodeURIComponent(text);
-
-        const deepLink = `tg://resolve?domain=${safeUser}&text=${safeText}`;
-        const webLink  = `https://t.me/${safeUser}?text=${safeText}`;
-
-        // 1) пытаемся открыть Telegram app (через iframe — не ломает текущую страницу)
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = deepLink;
-        document.body.appendChild(iframe);
-
-        // 2) fallback на webLink
-        setTimeout(() => {
-          try { document.body.removeChild(iframe); } catch(e){}
-          if (document.visibilityState === "visible") {
-            window.open(webLink, "_blank", "noopener,noreferrer");
-          }
-        }, 900);
-
-        // 3) резерв: если у человека открылся web, покажем подсказку "Открыть в приложении"
-        // (это помогает, когда web не переносит текст в app)
-        showNotice("Если открылось в браузере и текст не подставился — нажмите «Открыть в Telegram» ниже.");
-        setTimeout(() => {
-          if (document.visibilityState === "visible") {
-            window.__rm_open_tg_deeplink = () => {
-              const a = document.createElement("a");
-              a.href = deepLink;
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-            };
-            // ничего в UI не добавляем — только действие по кнопке ниже
-          }
-        }, 950);
-      };
 
       const openTelegram = () => {
         const username = (TELEGRAM_USERNAME || "").replace(/^@/, "").trim();
@@ -628,7 +602,8 @@
         }
 
         hideNotice();
-        openTelegramSmart(username, orderText);
+        const url = `https://t.me/${encodeURIComponent(username)}?text=${encodeURIComponent(orderText)}`;
+        window.open(url, "_blank", "noopener,noreferrer");
       };
 
       return (
@@ -827,23 +802,7 @@
                   <div className={"toastwrap" + (noticeOpen && notice ? " show" : "")} aria-live="polite">
                     <div className="toast">
                       <span className="dot" />
-                      <div className="ttext">
-                        {notice}
-                        {/* ✅ ДОБАВЛЕНО: резервная кнопка "Открыть в Telegram" (только когда нужно) */}
-                        {typeof window !== "undefined" && window.__rm_open_tg_deeplink && (
-                          <div style={{marginTop:"8px"}}>
-                            <button
-                              className="btn btn-dark"
-                              style={{padding:"8px 12px"}}
-                              onClick={()=>{
-                                try{ window.__rm_open_tg_deeplink(); }catch(e){}
-                              }}
-                            >
-                              Открыть в Telegram
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      <div className="ttext">{notice}</div>
                       <button className="tbtn" onClick={hideNotice} aria-label="Закрыть уведомление">×</button>
                     </div>
                   </div>
