@@ -28,8 +28,11 @@
       /* ✅ (3) кружок зелёный */
       --green:#22c55e;
 
-      /* ✅ FIX: высота приложения (стабильная, НЕ уменьшается от клавиатуры в TG) */
+      /* ✅ FIX: динамическая высота видимой области (клавиатура / mini app) */
       --app-height: 100%;
+
+      /* ✅ FIX: смещение низа под клавиатуру (для Telegram Mini App) */
+      --kb-offset: 0px;
     }
     *{box-sizing:border-box}
 
@@ -197,8 +200,11 @@
       transition: transform .25s ease;
       display:flex;flex-direction:column;
 
-      /* ✅ FIX: высота корзины = СТАБИЛЬНАЯ высота, НЕ уменьшается от клавиатуры в TG */
+      /* ✅ FIX: высота корзины = реальная видимая область */
       height: var(--app-height);
+
+      /* ✅ FIX: чтобы .cart-foot, уехавший вниз, был "под клавиатурой" (не виден) */
+      overflow: hidden;
     }
     .cart.open{transform: translateX(0)}
     .cart-head{
@@ -218,6 +224,11 @@
       padding:14px 16px;
       border-top:1px solid var(--border);
       background: var(--bg);
+
+      /* ✅ FIX: уводим низ под клавиатуру в Telegram Mini App */
+      transform: translateY(var(--kb-offset));
+      will-change: transform;
+      transition: transform .18s ease;
     }
     .item{
       padding:12px 0;
@@ -345,32 +356,39 @@
     (function () {
       const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
-      // ✅ Держим "стабильную" высоту (чтобы низ НЕ поднимался при клавиатуре)
-      let maxSeen = 0;
-
-      function computeHeight() {
+      function compute() {
         const vv = window.visualViewport;
-        const vvH = vv ? Math.round(vv.height) : 0;
-        const tgH = tg && tg.viewportHeight ? Math.round(tg.viewportHeight) : 0;
-        const wH  = window.innerHeight ? Math.round(window.innerHeight) : 0;
 
-        const current = Math.max(1, (tgH || vvH || wH || 1));
-        maxSeen = Math.max(maxSeen, current);
+        // видимая область (когда клавиатура открыта, vv.height уменьшается)
+        const vvH = vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
+        const vvTop = vv ? Math.round(vv.offsetTop || 0) : 0;
+        const visibleBottom = vvH + vvTop;
 
-        // ✅ Главное: используем viewportStableHeight (если есть), иначе maxSeen
-        const stable = (tg && tg.viewportStableHeight)
-          ? Math.max(1, Math.round(tg.viewportStableHeight))
-          : maxSeen;
+        // базовая (стабильная) высота: Telegram stable -> иначе window.innerHeight
+        const base = (tg && tg.viewportStableHeight)
+          ? Math.round(tg.viewportStableHeight)
+          : Math.round(window.innerHeight || vvH || 1);
 
-        document.documentElement.style.setProperty('--app-height', stable + 'px');
+        // 1) высота приложения = видимая (чтобы контент/скролл влезал)
+        document.documentElement.style.setProperty('--app-height', vvH + 'px');
+
+        // 2) смещение низа под клавиатуру: всё что "съела" клавиатура
+        const kb = Math.max(0, base - visibleBottom);
+        document.documentElement.style.setProperty('--kb-offset', kb + 'px');
       }
 
       if (tg && tg.expand) tg.expand();
 
-      computeHeight();
-      if (tg && tg.onEvent) tg.onEvent('viewportChanged', computeHeight);
-      window.addEventListener('resize', computeHeight);
-      if (window.visualViewport) window.visualViewport.addEventListener('resize', computeHeight);
+      compute();
+      if (tg && tg.onEvent) tg.onEvent('viewportChanged', compute);
+
+      window.addEventListener('resize', compute);
+      window.addEventListener('orientationchange', compute);
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', compute);
+        window.visualViewport.addEventListener('scroll', compute);
+      }
     })();
   </script>
 
