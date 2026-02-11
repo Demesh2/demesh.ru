@@ -228,7 +228,9 @@
       /* ✅ FIX: уводим низ под клавиатуру в Telegram Mini App */
       transform: translateY(var(--kb-offset));
       will-change: transform;
-      transition: transform .18s ease;
+
+      /* ✅ важно: без анимации, чтобы не "выезжало" обратно */
+      transition: none;
     }
     .item{
       padding:12px 0;
@@ -356,24 +358,30 @@
     (function () {
       const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
+      // ✅ запоминаем максимальную "чистую" высоту (без клавиатуры), чтобы Telegram не "сбивал" базу
+      let baseHeight = 0;
+
       function compute() {
         const vv = window.visualViewport;
 
-        // видимая область (когда клавиатура открыта, vv.height уменьшается)
         const vvH = vv ? Math.round(vv.height) : Math.round(window.innerHeight || 0);
         const vvTop = vv ? Math.round(vv.offsetTop || 0) : 0;
+
+        // нижняя граница видимой области
         const visibleBottom = vvH + vvTop;
 
-        // базовая (стабильная) высота: Telegram stable -> иначе window.innerHeight
-        const base = (tg && tg.viewportStableHeight)
-          ? Math.round(tg.viewportStableHeight)
-          : Math.round(window.innerHeight || vvH || 1);
+        // кандидаты на базовую высоту (берём максимум и НИКОГДА не уменьшаем)
+        const tgStable = (tg && tg.viewportStableHeight) ? Math.round(tg.viewportStableHeight) : 0;
+        const tgH = (tg && tg.viewportHeight) ? Math.round(tg.viewportHeight) : 0;
+        const wH = Math.round(window.innerHeight || 0);
+        const candidate = Math.max(tgStable, tgH, wH, visibleBottom);
+        if (candidate > baseHeight) baseHeight = candidate;
 
         // 1) высота приложения = видимая (чтобы контент/скролл влезал)
         document.documentElement.style.setProperty('--app-height', vvH + 'px');
 
-        // 2) смещение низа под клавиатуру: всё что "съела" клавиатура
-        const kb = Math.max(0, base - visibleBottom);
+        // 2) смещение низа под клавиатуру
+        const kb = Math.max(0, baseHeight - visibleBottom);
         document.documentElement.style.setProperty('--kb-offset', kb + 'px');
       }
 
@@ -389,6 +397,10 @@
         window.visualViewport.addEventListener('resize', compute);
         window.visualViewport.addEventListener('scroll', compute);
       }
+
+      // ✅ на всякий: при фокусе/расфокусе тоже пересчитать
+      document.addEventListener('focusin', compute);
+      document.addEventListener('focusout', compute);
     })();
   </script>
 
