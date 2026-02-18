@@ -406,7 +406,7 @@
           tg.BackButton?.hide();
           tg.SecondaryButton?.hide();
           if(totalQty > 0) {
-            tg.MainButton?.setText(`🛒  Корзина · ${totalQty} поз.`);
+            tg.MainButton?.setText(` Корзина · ${totalQty} поз.`);
             tg.MainButton?.show();
           } else {
             tg.MainButton?.hide();
@@ -414,7 +414,7 @@
         } else {
           tg.BackButton?.show();
           if(totalQty > 0) {
-            tg.MainButton?.setText(`✈️  Отправить заказ · ${fmt(totalPrice)}`);
+            tg.MainButton?.setText(` Отправить заказ · ${fmt(totalPrice)}`);
             tg.MainButton?.show();
             tg.SecondaryButton?.setText("🗑️  Очистить корзину");
             tg.SecondaryButton?.show();
@@ -526,7 +526,7 @@
               </div>
               {!tg && totalQty > 0 && (
                 <button className="cart-open-btn" onClick={()=>{haptic.light();setView("cart");}}>
-                  🛒 {totalQty}
+                   {totalQty}
                 </button>
               )}
             </div>
@@ -642,7 +642,7 @@
 
               {!tg && (
                 <div className="browser-btns">
-                  <button className="b-btn b-btn-primary" onClick={sendOrder}>✈️ Отправить заказ</button>
+                  <button className="b-btn b-btn-primary" onClick={sendOrder}>Отправить заказ</button>
                   <button className="b-btn b-btn-secondary" onClick={()=>{haptic.medium();setCart([]);}}>🗑️ Очистить корзину</button>
                 </div>
               )}
