@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binance ML Scalping Monitor</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+    --blue: #58a6ff;
+    --cyan: #39d2c0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+  }
+
+  .header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--blue);
+  }
+
+  .header .status {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .status .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  .dot.ok { background: var(--green); }
+  .dot.err { background: var(--red); }
+  .dot.warn { background: var(--yellow); }
+
+  .container {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    flex-wrap: wrap;
+  }
+
+  .symbol-panel {
+    flex: 1;
+    min-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .symbol-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(88, 166, 255, 0.05);
+  }
+
+  .symbol-header h2 {
+    font-size: 15px;
+    color: var(--blue);
+  }
+
+  .gate-badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .gate-badge.allow {
+    background: rgba(63, 185, 80, 0.15);
+    color: var(--green);
+    border: 1px solid var(--green);
+  }
+
+  .gate-badge.block {
+    background: rgba(248, 81, 73, 0.15);
+    color: var(--red);
+    border: 1px solid var(--red);
+  }
+
+  .sections {
+    padding: 10px 16px;
+  }
+
+  .section {
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 3px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 6px 12px;
+  }
+
+  .metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .metric .label {
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
+  .metric .value {
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .metric .value.pos { color: var(--green); }
+  .metric .value.neg { color: var(--red); }
+  .metric .value.warn { color: var(--yellow); }
+  .metric .value.neutral { color: var(--text); }
+
+  .prob-bar {
+    margin-top: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    height: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .prob-bar .fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease, background 0.3s ease;
+  }
+
+  .prob-bar .text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 4px rgba(0,0,0,0.8);
+  }
+
+  .reasons {
+    margin-top: 6px;
+    font-size: 11px;
+  }
+
+  .reasons .reason {
+    color: var(--red);
+    padding: 1px 0;
+  }
+
+  .trades-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  .trades-table th {
+    text-align: left;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+
+  .trades-table td {
+    padding: 3px 6px;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+  }
+
+  .trades-table tr:hover {
+    background: rgba(88, 166, 255, 0.03);
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+
+  .stat-box {
+    text-align: center;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-width: 80px;
+  }
+
+  .stat-box .stat-value {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .stat-box .stat-label {
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .open-trade-box {
+    margin-top: 6px;
+    padding: 8px 12px;
+    border: 1px solid var(--yellow);
+    border-radius: 6px;
+    background: rgba(210, 153, 34, 0.08);
+    font-size: 12px;
+  }
+
+  .equity-chart {
+    margin-top: 8px;
+    height: 60px;
+    position: relative;
+  }
+
+  .equity-chart canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (max-width: 600px) {
+    .container { flex-direction: column; }
+    .symbol-panel { min-width: 100%; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>BINANCE ML SCALPING</h1>
+  <div class="status">
+    <span><span class="dot" id="dot-conn"></span>WS: <span id="ws-status">--</span></span>
+    <span>Model: <span id="model-status">--</span></span>
+    <span>Uptime: <span id="uptime">--</span></span>
+    <span id="last-update" style="color:var(--text-dim)">--</span>
+  </div>
+</div>
+
+<div class="container" id="panels"></div>
+
+<script>
+const POLL_INTERVAL = 1000;
+let lastData = null;
+
+function fmt(n, d) {
+  if (n == null || isNaN(n)) return '--';
+  return Number(n).toFixed(d === undefined ? 2 : d);
+}
+
+function fmtPrice(n) {
+  if (n == null || n === 0) return '--';
+  return n > 1000 ? fmt(n, 2) : fmt(n, 4);
+}
+
+function colorClass(val, thresholds) {
+  if (val == null) return 'neutral';
+  if (thresholds.posAbove !== undefined && val > thresholds.posAbove) return 'pos';
+  if (thresholds.negBelow !== undefined && val < thresholds.negBelow) return 'neg';
+  if (thresholds.warnAbove !== undefined && val > thresholds.warnAbove) return 'warn';
+  return 'neutral';
+}
+
+function formatUptime(s) {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = Math.floor(s % 60);
+  return `${h}h ${m}m ${sec}s`;
+}
+
+function renderSymbol(symbol, d) {
+  const gateClass = d.gate_allowed ? 'allow' : 'block';
+  const gateText = d.gate_allowed ? 'ALLOW' : 'BLOCK';
+  const probPct = (d.prob_tp_first * 100);
+  const probColor = d.prob_tp_first >= 0.7 ? 'var(--green)' :
+                    d.prob_tp_first >= 0.5 ? 'var(--yellow)' : 'var(--red)';
+
+  let reasonsHtml = '';
+  if (d.gate_reasons && d.gate_reasons.length > 0) {
+    reasonsHtml = '<div class="reasons">' +
+      d.gate_reasons.map(r => `<div class="reason">&#x2717; ${r}</div>`).join('') +
+      '</div>';
+  }
+
+  let openTradeHtml = '';
+  if (d.open_trade) {
+    const ot = d.open_trade;
+    openTradeHtml = `<div class="open-trade-box">
+      <strong>OPEN ${ot.side}</strong> @ ${fmtPrice(ot.entry_price)}
+      | ${fmt(ot.duration_s, 0)}s | prob=${fmt(ot.prob, 3)}
+    </div>`;
+  }
+
+  const stats = d.paper_stats || {};
+  const trades = d.recent_trades || [];
+
+  let tradesHtml = '';
+  if (trades.length > 0) {
+    const rows = trades.slice().reverse().map(t => {
+      const pnlClass = t.pnl_bps > 0 ? 'pos' : t.pnl_bps < 0 ? 'neg' : 'neutral';
+      const reasonIcon = t.exit_reason === 'TP' ? '&#x2714;' :
+                         t.exit_reason === 'SL' ? '&#x2718;' : '&#x23F1;';
+      return `<tr>
+        <td>${reasonIcon} ${t.exit_reason}</td>
+        <td>${fmtPrice(t.entry_price)}</td>
+        <td>${fmtPrice(t.exit_price)}</td>
+        <td class="${pnlClass}">${fmt(t.pnl_bps, 1)}</td>
+        <td>${fmt(t.duration_s, 0)}s</td>
+        <td>${fmt(t.prob, 3)}</td>
+      </tr>`;
+    }).join('');
+    tradesHtml = `<table class="trades-table">
+      <tr><th>Exit</th><th>Entry</th><th>ExitP</th><th>PnL</th><th>Dur</th><th>Prob</th></tr>
+      ${rows}
+    </table>`;
+  }
+
+  return `
+    <div class="symbol-panel">
+      <div class="symbol-header">
+        <h2>${symbol}</h2>
+        <span class="gate-badge ${gateClass}">${gateText}</span>
+      </div>
+      <div class="sections">
+        <!-- Market -->
+        <div class="section">
+          <div class="section-title">Market</div>
+          <div class="grid">
+            <div class="metric"><span class="label">Mid</span><span class="value neutral">${fmtPrice(d.mid_price)}</span></div>
+            <div class="metric"><span class="label">Spread</span><span class="value ${colorClass(d.spread_ticks, {warnAbove: 2})}">${fmt(d.spread_ticks, 1)} t / ${fmt(d.spread_bps, 1)} bps</span></div>
+            <div class="metric"><span class="label">Imb10</span><span class="value ${colorClass(d.imbalance_top10, {posAbove: 0.1, negBelow: -0.1})}">${fmt(d.imbalance_top10, 3)}</span></div>
+            <div class="metric"><span class="label">Imb20</span><span class="value ${colorClass(d.imbalance_top20, {posAbove: 0.1, negBelow: -0.1})}">${fmt(d.imbalance_top20, 3)}</span></div>
+          </div>
+        </div>
+
+        <!-- Tape -->
+        <div class="section">
+          <div class="section-title">Tape</div>
+          <div class="grid">
+            <div class="metric"><span class="label">Rate/10s</span><span class="value neutral">${fmt(d.trade_rate_10s, 1)}/s</span></div>
+            <div class="metric"><span class="label">SVol 10s</span><span class="value ${colorClass(d.signed_vol_10s, {posAbove: 0, negBelow: 0})}">${fmt(d.signed_vol_10s, 0)}</span></div>
+            <div class="metric"><span class="label">CVD 60s</span><span class="value ${colorClass(d.cvd_60s, {posAbove: 0, negBelow: 0})}">${fmt(d.cvd_60s, 0)}</span></div>
+            <div class="metric"><span class="label">CVD slope</span><span class="value ${colorClass(d.cvd_slope, {posAbove: 0, negBelow: 0})}">${fmt(d.cvd_slope, 0)}</span></div>
+          </div>
+        </div>
+
+        <!-- Spot / Volatility -->
+        <div class="section">
+          <div class="section-title">Spot &amp; Volatility</div>
+          <div class="grid">
+            <div class="metric"><span class="label">Basis</span><span class="value neutral">${fmt(d.basis_bps, 2)} bps</span></div>
+            <div class="metric"><span class="label">Confirm</span><span class="value ${colorClass(d.spot_confirm_score, {posAbove: 60, negBelow: 30})}">${fmt(d.spot_confirm_score, 0)}/100</span></div>
+            <div class="metric"><span class="label">ATR</span><span class="value neutral">${fmt(d.atr_1m_14, 4)}</span></div>
+            <div class="metric"><span class="label">ATR bps</span><span class="value neutral">${fmt(d.atr_bps, 1)}</span></div>
+          </div>
+        </div>
+
+        <!-- Inference -->
+        <div class="section">
+          <div class="section-title">Inference</div>
+          <div class="prob-bar">
+            <div class="fill" style="width:${probPct}%; background:${probColor}"></div>
+            <div class="text">P(TP) = ${fmt(d.prob_tp_first, 4)}</div>
+          </div>
+          ${reasonsHtml}
+        </div>
+
+        <!-- Health -->
+        <div class="section">
+          <div class="section-title">Health</div>
+          <div class="grid">
+            <div class="metric"><span class="label">WS lag p95</span><span class="value ${colorClass(d.ws_lag_p95, {warnAbove: 500})}">${fmt(d.ws_lag_p95, 0)} ms</span></div>
+            <div class="metric"><span class="label">Depth sync</span><span class="value ${d.depth_sync_ok ? 'pos' : 'neg'}">${d.depth_sync_ok ? 'OK' : 'DESYNC'}</span></div>
+            <div class="metric"><span class="label">Resync/10m</span><span class="value ${colorClass(d.resync_count_10m, {warnAbove: 3})}">${d.resync_count_10m}</span></div>
+          </div>
+        </div>
+
+        <!-- Paper Trading -->
+        <div class="section">
+          <div class="section-title">Paper Trading</div>
+          <div class="stats-row">
+            <div class="stat-box"><div class="stat-value neutral">${stats.total || 0}</div><div class="stat-label">Trades</div></div>
+            <div class="stat-box"><div class="stat-value ${(stats.win_rate||0) > 55 ? 'pos' : (stats.win_rate||0) < 45 ? 'neg' : 'neutral'}">${fmt(stats.win_rate, 1)}%</div><div class="stat-label">Win Rate</div></div>
+            <div class="stat-box"><div class="stat-value ${(stats.avg_pnl_bps||0) > 0 ? 'pos' : 'neg'}">${fmt(stats.avg_pnl_bps, 1)}</div><div class="stat-label">Avg PnL bps</div></div>
+            <div class="stat-box"><div class="stat-value ${(stats.total_pnl_bps||0) > 0 ? 'pos' : 'neg'}">${fmt(stats.total_pnl_bps, 1)}</div><div class="stat-label">Total PnL</div></div>
+            <div class="stat-box"><div class="stat-value neg">${fmt(stats.max_dd_bps, 1)}</div><div class="stat-label">Max DD</div></div>
+          </div>
+          ${openTradeHtml}
+          <div class="equity-chart"><canvas id="equity-${symbol}"></canvas></div>
+          ${tradesHtml}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function drawEquity(canvasId, curve) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !curve || curve.length < 2) return;
+
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.offsetWidth;
+  const H = canvas.height = canvas.offsetHeight;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const mn = Math.min(0, ...curve);
+  const mx = Math.max(0, ...curve);
+  const range = mx - mn || 1;
+  const pad = 4;
+
+  // Zero line
+  const zeroY = H - pad - ((0 - mn) / range) * (H - pad * 2);
+  ctx.strokeStyle = 'rgba(139,148,158,0.3)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(0, zeroY);
+  ctx.lineTo(W, zeroY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Equity line
+  ctx.strokeStyle = curve[curve.length - 1] >= 0 ? '#3fb950' : '#f85149';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i < curve.length; i++) {
+    const x = (i / (curve.length - 1)) * W;
+    const y = H - pad - ((curve[i] - mn) / range) * (H - pad * 2);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function update() {
+  fetch('/api/state')
+    .then(r => r.json())
+    .then(data => {
+      lastData = data;
+
+      // Header
+      document.getElementById('dot-conn').className = 'dot ok';
+      document.getElementById('ws-status').textContent = 'Connected';
+      document.getElementById('model-status').textContent = data.model_loaded ? 'Loaded' : 'Not loaded';
+      document.getElementById('model-status').style.color = data.model_loaded ? 'var(--green)' : 'var(--yellow)';
+      document.getElementById('uptime').textContent = formatUptime(data.uptime_s);
+      document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+
+      // Panels
+      const panels = document.getElementById('panels');
+      let html = '';
+      for (const [symbol, d] of Object.entries(data.symbols)) {
+        html += renderSymbol(symbol, d);
+      }
+      panels.innerHTML = html;
+
+      // Draw equity charts
+      for (const [symbol, d] of Object.entries(data.symbols)) {
+        if (d.paper_stats && d.paper_stats.equity_curve) {
+          drawEquity(`equity-${symbol}`, d.paper_stats.equity_curve);
+        }
+      }
+    })
+    .catch(err => {
+      document.getElementById('dot-conn').className = 'dot err';
+      document.getElementById('ws-status').textContent = 'Disconnected';
+    });
+}
+
+update();
+setInterval(update, POLL_INTERVAL);
+</script>
+</body>
+</html>

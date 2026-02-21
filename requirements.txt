@@ -1,0 +1,18 @@
+# Binance ML Scalping MVP — зависимости
+# Установка: pip install -r requirements.txt
+
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# HTTP/WebSocket client
+aiohttp==3.11.11
+
+# Data processing
+numpy==2.2.1
+pandas==2.2.3
+pyarrow==18.1.0
+
+# ML
+lightgbm==4.5.0
+scikit-learn==1.6.1
