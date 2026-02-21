@@ -111,6 +111,19 @@
     .price-pill.added .ppl,
     .price-pill.added .ppv,
     .price-pill.added .ppp { color: var(--btn-text); }
+    .ppp-qty {
+      background: rgba(255,255,255,0.25);
+      border-radius: 8px;
+      padding: 0 5px;
+      min-width: 20px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .product-row.in-cart {
+      border-left: 3px solid var(--btn);
+      padding-left: 13px;
+    }
 
     /* ── Корзина — форма ── */
     .form-block {
@@ -337,19 +350,23 @@
       ]},
     ];
 
-    const PricePill = React.memo(({ item, weightType, priceStr, onAdd }) => {
+    const PricePill = React.memo(({ item, weightType, priceStr, onAdd, qty }) => {
       const [flash, setFlash] = useState(false);
+      const timerRef = useRef(null);
+      useEffect(() => () => { if(timerRef.current) clearTimeout(timerRef.current); }, []);
+      const inCart = qty > 0;
       const handle = () => {
         onAdd(item, weightType, priceStr);
         haptic.light();
         setFlash(true);
-        setTimeout(() => setFlash(false), 500);
+        if(timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => setFlash(false), 500);
       };
       return (
-        <button className={"price-pill"+(flash?" added":"")} onClick={handle}>
+        <button className={"price-pill"+(inCart||flash?" added":"")} onClick={handle}>
           <span className="ppl">{wLabel(weightType)}</span>
           <span className="ppv">{priceStr}</span>
-          <span className="ppp">+</span>
+          <span className={"ppp"+(inCart?" ppp-qty":"")}>{inCart ? qty : "+"}</span>
         </button>
       );
     });
@@ -448,7 +465,7 @@
           tg.SecondaryButton?.offClick(onSecondary);
           tg.BackButton?.offClick(onBack);
         };
-      }, [view, cart, name, phone, address, totalPrice]);
+      }, [view, cart, name, phone, address, totalPrice, sendOrder]);
 
       // ── Защита от закрытия ──
       useEffect(() => {
@@ -514,6 +531,7 @@
       }, [cart, name, phone, address, totalPrice]);
 
       const cats = useMemo(() => ["Все", ...data.map(b=>b.cat)], []);
+      const cartMap = useMemo(() => Object.fromEntries(cart.map(i=>[i.id,i.quantity])), [cart]);
 
       return (
         <div>
@@ -544,18 +562,21 @@
               <div key={block.cat}>
                 <div className="section-label">{block.cat}</div>
                 <div className="section-cards">
-                  {block.items.map((item,idx) => (
-                    <div key={idx} className="product-row">
+                  {block.items.map((item,idx) => {
+                    const anyInCart = ['kg','g500','g250','pack'].some(wt => item[wt] && cartMap[`${item.name}-${wt}`]);
+                    return (
+                    <div key={idx} className={"product-row"+(anyInCart?" in-cart":"")}>
                       <div className="product-name">{item.name}</div>
                       {item.note && <div className="product-note">{item.note}</div>}
                       <div className="price-pills">
-                        {item.kg   && <PricePill item={item} weightType="kg"   priceStr={item.kg}   onAdd={addToCart}/>}
-                        {item.g500 && <PricePill item={item} weightType="g500" priceStr={item.g500} onAdd={addToCart}/>}
-                        {item.g250 && <PricePill item={item} weightType="g250" priceStr={item.g250} onAdd={addToCart}/>}
-                        {item.pack && <PricePill item={item} weightType="pack" priceStr={item.pack} onAdd={addToCart}/>}
+                        {item.kg   && <PricePill item={item} weightType="kg"   priceStr={item.kg}   onAdd={addToCart} qty={cartMap[`${item.name}-kg`]||0}/>}
+                        {item.g500 && <PricePill item={item} weightType="g500" priceStr={item.g500} onAdd={addToCart} qty={cartMap[`${item.name}-g500`]||0}/>}
+                        {item.g250 && <PricePill item={item} weightType="g250" priceStr={item.g250} onAdd={addToCart} qty={cartMap[`${item.name}-g250`]||0}/>}
+                        {item.pack && <PricePill item={item} weightType="pack" priceStr={item.pack} onAdd={addToCart} qty={cartMap[`${item.name}-pack`]||0}/>}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -620,7 +641,7 @@
                       </div>
                       <div>
                         <div className="ci-price">{fmt(it.priceValue*it.quantity)}</div>
-                        <div className="ci-sub">{it.priceStr} × {it.quantity}</div>
+                        <div className="ci-sub">{fmt(it.priceValue)} × {it.quantity}</div>
                       </div>
                     </div>
                     <div className="ci-bottom">
