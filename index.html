@@ -423,7 +423,7 @@
           tg.BackButton?.hide();
           tg.SecondaryButton?.hide();
           if(totalQty > 0) {
-            tg.MainButton?.setText(` Корзина · ${totalQty} поз.`);
+            tg.MainButton?.setText(` Корзина · ${totalQty} поз. · ${fmt(totalPrice)}`);
             tg.MainButton?.show();
           } else {
             tg.MainButton?.hide();
@@ -544,7 +544,7 @@
               </div>
               {!tg && totalQty > 0 && (
                 <button className="cart-open-btn" onClick={()=>{haptic.light();setView("cart");}}>
-                   {totalQty}
+                   {totalQty} · {fmt(totalPrice)}
                 </button>
               )}
             </div>
