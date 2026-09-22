@@ -241,6 +241,7 @@
     const { useEffect, useMemo, useState, useCallback, useRef } = React;
 
     const TG_USER = "OrEx_zakaz";
+    const ORDER_URL = "https://royal-market-bot.mail-demesh.workers.dev/order";
     const tg = window.Telegram?.WebApp || null;
 
     const haptic = {
@@ -505,6 +506,7 @@
         }
       }, []);
 
+      const sendingRef = useRef(false);
       const sendOrder = useCallback(() => {
         if(!cart.length) {
           tg ? tg.showAlert("Корзина пуста. Добавьте товары.") : alert("Корзина пуста.");
@@ -526,8 +528,28 @@
           lines.push(`${i+1}. ${it.name} — ${wLabel(it.weightType)} — ${it.priceStr} × ${it.quantity} = ${fmt(it.priceValue*it.quantity)}`)
         );
         lines.push("", `ИТОГО: ${fmt(totalPrice)}`);
-        const url = `https://t.me/${TG_USER}?text=${encodeURIComponent(lines.join("\n"))}`;
-        tg?.openTelegramLink ? tg.openTelegramLink(url) : window.open(url,"_blank","noopener,noreferrer");
+        // Запасной путь: открыть чат с менеджером с готовым текстом (как раньше)
+        const fallback = () => {
+          const url = `https://t.me/${TG_USER}?text=${encodeURIComponent(lines.join("\n"))}`;
+          tg?.openTelegramLink ? tg.openTelegramLink(url) : window.open(url,"_blank","noopener,noreferrer");
+        };
+        if(!tg?.initData) { fallback(); return; }
+        if(sendingRef.current) return; // защита от двойного нажатия
+        sendingRef.current = true;
+        const send = () => fetch(ORDER_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ initData: tg.initData, text: lines.slice(2).join("\n") }),
+          })
+          .then(r => r.json())
+          .then(res => {
+            if(!res.ok) throw new Error("order failed");
+            tg.showAlert(`Заказ №${res.id} принят! ✅\nПодтверждение пришло в чат с ботом.`, () => tg.close());
+          })
+          .catch(() => { sendingRef.current = false; fallback(); });
+        // Просим разрешение, чтобы бот мог прислать подтверждение и статусы
+        if(tg.initDataUnsafe?.user?.allows_write_to_pm || !tg.requestWriteAccess) send();
+        else tg.requestWriteAccess(() => send());
       }, [cart, name, phone, address, totalPrice]);
 
       const cats = useMemo(() => ["Все", ...data.map(b=>b.cat)], []);
